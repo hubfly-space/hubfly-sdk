@@ -4,7 +4,7 @@ Official Go client library for **Hubfly Cloud Platform API** (`https://api.hubfl
 
 ---
 
-## ⚡ Installation
+## Installation
 
 ```bash
 go get github.com/hubfly/hubfly-sdk/go
@@ -12,7 +12,7 @@ go get github.com/hubfly/hubfly-sdk/go
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```go
 package main
@@ -47,7 +47,7 @@ func main() {
 
 ---
 
-## 🛠️ Code Examples
+## Code Examples
 
 ### 1. Provisioning a Container Deployment
 ```go
@@ -96,6 +96,6 @@ if err != nil {
 
 ---
 
-## 📄 License
+## License
 
 MIT License. Copyright (c) Hubfly Cloud Platform.

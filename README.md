@@ -4,7 +4,7 @@ Official client SDK monorepo for the **Hubfly Cloud Platform API** (`https://api
 
 ---
 
-## 📦 Packages
+## Packages
 
 | Language | Directory | Module / Package Name | Status |
 | :--- | :--- | :--- | :--- |
@@ -13,7 +13,7 @@ Official client SDK monorepo for the **Hubfly Cloud Platform API** (`https://api
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### TypeScript / JavaScript
 ```bash
@@ -74,7 +74,7 @@ func main() {
 
 ---
 
-## 🛠️ Monorepo Commands
+## Monorepo Commands
 
 ```bash
 # Build both TypeScript and Go SDKs
@@ -92,6 +92,6 @@ make build-go
 
 ---
 
-## 📄 License
+## License
 
 Internal & Proprietary to Hubfly Cloud Platform.
