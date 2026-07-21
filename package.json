@@ -1,0 +1,12 @@
+{
+  "name": "hubfly-sdk-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun --filter '*' build",
+    "test": "bun --filter '*' test",
+    "format": "prettier --write '**/*.{ts,js,json,md}'"
+  }
+}
