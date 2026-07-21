@@ -1,0 +1,19 @@
+# Node & TypeScript
+node_modules/
+dist/
+.tsup/
+*.tsbuildinfo
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+coverage.txt
+
+# Environment & IDE
+.env
+.env.*
+.DS_Store
+.vscode/
+.idea/
