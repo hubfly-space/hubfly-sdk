@@ -1,0 +1,31 @@
+{
+  "name": "@hubfly/sdk",
+  "version": "1.0.0",
+  "description": "Official TypeScript & Node.js SDK for Hubfly Cloud Platform API",
+  "author": "Hubfly Cloud Platform",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.10",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  }
+}
