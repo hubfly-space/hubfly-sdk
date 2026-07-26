@@ -11,6 +11,12 @@ import { DomainsModule } from './modules/domains.js';
 import { GpuModule } from './modules/gpu.js';
 import { BillingModule } from './modules/billing.js';
 import { SystemModule } from './modules/system.js';
+import { RegionsModule } from './modules/regions.js';
+import { TemplatesModule } from './modules/templates.js';
+import { CliModule } from './modules/cli.js';
+import { GithubModule } from './modules/github.js';
+import { MarketplaceModule } from './modules/marketplace.js';
+import { CoursesModule } from './modules/courses.js';
 
 /**
  * Custom Error thrown when Hubfly API returns an error response
@@ -47,6 +53,12 @@ export class HubflyClient {
   public readonly gpu: GpuModule;
   public readonly billing: BillingModule;
   public readonly system: SystemModule;
+  public readonly regions: RegionsModule;
+  public readonly templates: TemplatesModule;
+  public readonly cli: CliModule;
+  public readonly github: GithubModule;
+  public readonly marketplace: MarketplaceModule;
+  public readonly courses: CoursesModule;
 
   constructor(options: HubflyClientOptions = {}) {
     this.baseUrl = (options.baseUrl || 'https://api.hubfly.space').replace(/\/$/, '');
@@ -66,6 +78,12 @@ export class HubflyClient {
     this.gpu = new GpuModule(this);
     this.billing = new BillingModule(this);
     this.system = new SystemModule(this);
+    this.regions = new RegionsModule(this);
+    this.templates = new TemplatesModule(this);
+    this.cli = new CliModule(this);
+    this.github = new GithubModule(this);
+    this.marketplace = new MarketplaceModule(this);
+    this.courses = new CoursesModule(this);
   }
 
   /**
