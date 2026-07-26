@@ -68,6 +68,22 @@ type Client struct {
 	Domains       *DomainsService
 	Gpu           *GpuService
 	System        *SystemService
+	Regions       *RegionsService
+	Templates     *TemplatesService
+	LoadBalancers *LoadBalancersService
+	Network       *NetworkService
+	Ports         *PortsService
+	Registry      *RegistryService
+	Subdomains    *SubdomainsService
+	Team          *TeamService
+	Tunnels       *TunnelsService
+	Volumes       *VolumesService
+	Webhooks      *WebhooksService
+	Hibernation   *HibernationService
+	Cli           *CliService
+	Github        *GithubService
+	Marketplace   *MarketplaceService
+	Courses       *CoursesService
 }
 
 // NewClient initializes a new Hubfly API Client
@@ -96,6 +112,22 @@ func NewClient(opts ...Option) *Client {
 	c.Domains = &DomainsService{client: c}
 	c.Gpu = &GpuService{client: c}
 	c.System = &SystemService{client: c}
+	c.Regions = &RegionsService{client: c}
+	c.Templates = &TemplatesService{client: c}
+	c.LoadBalancers = &LoadBalancersService{client: c}
+	c.Network = &NetworkService{client: c}
+	c.Ports = &PortsService{client: c}
+	c.Registry = &RegistryService{client: c}
+	c.Subdomains = &SubdomainsService{client: c}
+	c.Team = &TeamService{client: c}
+	c.Tunnels = &TunnelsService{client: c}
+	c.Volumes = &VolumesService{client: c}
+	c.Webhooks = &WebhooksService{client: c}
+	c.Hibernation = &HibernationService{client: c}
+	c.Cli = &CliService{client: c}
+	c.Github = &GithubService{client: c}
+	c.Marketplace = &MarketplaceService{client: c}
+	c.Courses = &CoursesService{client: c}
 
 	return c
 }

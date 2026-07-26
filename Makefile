@@ -1,15 +1,16 @@
-.PHONY: help install build test clean build-ts test-ts build-go test-go
+.PHONY: help install build test clean build-ts test-ts build-go test-go verify-spec
 
 help:
 	@echo "Hubfly SDK Monorepo - Available Targets:"
-	@echo "  make install   - Install node dependencies for TypeScript SDK"
-	@echo "  make build     - Build both TypeScript and Go SDKs"
-	@echo "  make test      - Test both TypeScript and Go SDKs"
-	@echo "  make build-ts  - Build TypeScript SDK"
-	@echo "  make test-ts   - Run TypeScript SDK tests"
-	@echo "  make build-go  - Build Go SDK"
-	@echo "  make test-go   - Run Go SDK tests"
-	@echo "  make clean     - Clean build artifacts"
+	@echo "  make install     - Install node dependencies for TypeScript SDK"
+	@echo "  make build       - Build both TypeScript and Go SDKs"
+	@echo "  make test        - Test both TypeScript and Go SDKs"
+	@echo "  make build-ts    - Build TypeScript SDK"
+	@echo "  make test-ts     - Run TypeScript SDK tests"
+	@echo "  make build-go    - Build Go SDK"
+	@echo "  make test-go     - Run Go SDK tests"
+	@echo "  make verify-spec - Verify SDK alignment against hubfly-dashboard openapi.json"
+	@echo "  make clean       - Clean build artifacts"
 
 install:
 	cd packages/ts && bun install
@@ -25,6 +26,9 @@ build-go:
 
 test-go:
 	cd packages/go && go test ./...
+
+verify-spec:
+	bun run scripts/verify-spec-diff.ts
 
 build: build-ts build-go
 
