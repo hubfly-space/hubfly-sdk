@@ -66,6 +66,37 @@ type CreateTokenParams struct {
 	ExpiresInDays int    `json:"expiresInDays,omitempty"`
 }
 
+type Subaccount struct {
+	ID                    string    `json:"id"`
+	Name                  string    `json:"name"`
+	ExternalRef           *string   `json:"externalRef,omitempty"`
+	Status                string    `json:"status"`
+	BackingOrganizationID string    `json:"backingOrganizationId"`
+	ParentType            string    `json:"parentType"`
+	ParentID              string    `json:"parentId"`
+	CreatedAt             time.Time `json:"createdAt"`
+	UpdatedAt             time.Time `json:"updatedAt"`
+}
+
+type SubaccountKey struct {
+	ID          string     `json:"id"`
+	Name        string     `json:"name"`
+	TokenPrefix string     `json:"tokenPrefix"`
+	Scopes      []string   `json:"scopes"`
+	LastUsedAt  *time.Time `json:"lastUsedAt,omitempty"`
+	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	Token       string     `json:"token,omitempty"`
+}
+
+type CreateSubaccountParams struct {
+	Name        string            `json:"name"`
+	ExternalRef string            `json:"externalRef,omitempty"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
+	ParentType  string            `json:"parentType,omitempty"`
+	ParentID    string            `json:"parentId,omitempty"`
+}
+
 // ==========================================
 // Project & Container Models
 // ==========================================
