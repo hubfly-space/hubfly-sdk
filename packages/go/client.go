@@ -33,6 +33,11 @@ func WithToken(token string) Option {
 	}
 }
 
+// WithSubaccount routes resource requests to a specific sub-account when using a platform key.
+func WithSubaccount(subaccountID string) Option {
+	return func(c *Client) { c.subaccountID = subaccountID }
+}
+
 // WithBaseURL overrides the default API base URL
 func WithBaseURL(url string) Option {
 	return func(c *Client) {
@@ -59,12 +64,15 @@ type Client struct {
 	baseURL    string
 	token      string
 	httpClient *http.Client
+	subaccountID string
 
 	// Services
 	Auth          *AuthService
 	Projects      *ProjectsService
 	Containers    *ContainersService
 	Organizations *OrganizationsService
+	Subaccounts   *SubaccountsService
+	PlatformKeys  *PlatformKeysService
 	Domains       *DomainsService
 	Gpu           *GpuService
 	System        *SystemService
@@ -109,6 +117,8 @@ func NewClient(opts ...Option) *Client {
 	c.Projects = &ProjectsService{client: c}
 	c.Containers = &ContainersService{client: c}
 	c.Organizations = &OrganizationsService{client: c}
+	c.Subaccounts = &SubaccountsService{client: c}
+	c.PlatformKeys = &PlatformKeysService{client: c}
 	c.Domains = &DomainsService{client: c}
 	c.Gpu = &GpuService{client: c}
 	c.System = &SystemService{client: c}
@@ -154,6 +164,9 @@ func Request[T any](ctx context.Context, c *Client, method, path string, body in
 	req.Header.Set("Accept", "application/json")
 	if c.token != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
+	}
+	if c.subaccountID != "" {
+		req.Header.Set("X-HubFly-Subaccount", c.subaccountID)
 	}
 
 	resp, err := c.httpClient.Do(req)
