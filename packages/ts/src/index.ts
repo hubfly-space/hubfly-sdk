@@ -26,3 +26,5 @@ export { CliModule } from './modules/cli.js';
 export { GithubModule } from './modules/github.js';
 export { MarketplaceModule } from './modules/marketplace.js';
 export { CoursesModule } from './modules/courses.js';
+export { SubaccountsModule } from './modules/subaccounts.js';
+export { PlatformKeysModule } from './modules/platform-keys.js';
