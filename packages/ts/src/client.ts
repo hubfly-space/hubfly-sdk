@@ -17,6 +17,8 @@ import { CliModule } from './modules/cli.js';
 import { GithubModule } from './modules/github.js';
 import { MarketplaceModule } from './modules/marketplace.js';
 import { CoursesModule } from './modules/courses.js';
+import { SubaccountsModule } from './modules/subaccounts.js';
+import { PlatformKeysModule } from './modules/platform-keys.js';
 
 /**
  * Custom Error thrown when Hubfly API returns an error response
@@ -44,6 +46,7 @@ export class HubflyClient {
   private readonly token?: string;
   private readonly customFetch: typeof fetch;
   private readonly timeout: number;
+  private readonly subaccountId?: string;
 
   // Module Instances
   public readonly auth: AuthModule;
@@ -59,6 +62,8 @@ export class HubflyClient {
   public readonly github: GithubModule;
   public readonly marketplace: MarketplaceModule;
   public readonly courses: CoursesModule;
+  public readonly subaccounts: SubaccountsModule;
+  public readonly platformKeys: PlatformKeysModule;
 
   constructor(options: HubflyClientOptions = {}) {
     this.baseUrl = (options.baseUrl || 'https://api.hubfly.space').replace(/\/$/, '');
@@ -69,6 +74,7 @@ export class HubflyClient {
 
     this.customFetch = options.fetch || globalThis.fetch;
     this.timeout = options.timeout || 30000;
+    this.subaccountId = options.subaccountId;
 
     // Instantiate Modules
     this.auth = new AuthModule(this);
@@ -84,6 +90,8 @@ export class HubflyClient {
     this.github = new GithubModule(this);
     this.marketplace = new MarketplaceModule(this);
     this.courses = new CoursesModule(this);
+    this.subaccounts = new SubaccountsModule(this);
+    this.platformKeys = new PlatformKeysModule(this);
   }
 
   /**
@@ -123,6 +131,9 @@ export class HubflyClient {
 
     if (this.token) {
       reqHeaders['Authorization'] = `Bearer ${this.token}`;
+    }
+    if (this.subaccountId) {
+      reqHeaders['X-HubFly-Subaccount'] = this.subaccountId;
     }
 
     const controller = new AbortController();
