@@ -53,6 +53,30 @@ export interface HubflyClientOptions {
    * Default timeout in milliseconds (default: 30000)
    */
   timeout?: number;
+  subaccountId?: string;
+}
+
+export interface Subaccount {
+  id: string;
+  name: string;
+  externalRef?: string | null;
+  status: 'active' | 'suspended' | 'closing' | 'closed';
+  backingOrganizationId: string;
+  parentType: 'user' | 'organization';
+  parentId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubaccountKey {
+  id: string;
+  name: string;
+  tokenPrefix: string;
+  scopes: string[];
+  lastUsedAt?: string | null;
+  expiresAt?: string | null;
+  createdAt: string;
+  token?: string;
 }
 
 // ==========================================
