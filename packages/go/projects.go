@@ -3,6 +3,8 @@ package hubfly
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"time"
 )
 
 type ProjectsService struct {
@@ -134,6 +136,49 @@ func (s *NetworkService) Get(ctx context.Context, projectID string) (*Response[N
 func (s *NetworkService) GetFirewall(ctx context.Context, projectID string) (*Response[NetworkFirewall], error) {
 	path := fmt.Sprintf("/api/v1/projects/%s/network/firewall", projectID)
 	return Request[NetworkFirewall](ctx, s.client, "GET", path, nil)
+}
+
+func (s *NetworkService) ListChallengeRoutes(ctx context.Context, projectID string) (*Response[struct {
+	Routes []ChallengeRoute `json:"routes"`
+}], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/network/challenge/routes", projectID)
+	return Request[struct {
+		Routes []ChallengeRoute `json:"routes"`
+	}](ctx, s.client, "GET", path, nil)
+}
+
+func (s *NetworkService) GetChallengePolicy(ctx context.Context, projectID, routeType, routeID string) (*Response[struct {
+	Policy *RouteChallengePolicy `json:"policy"`
+}], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/network/challenge?routeType=%s&routeId=%s", projectID, url.QueryEscape(routeType), url.QueryEscape(routeID))
+	return Request[struct {
+		Policy *RouteChallengePolicy `json:"policy"`
+	}](ctx, s.client, "GET", path, nil)
+}
+
+func (s *NetworkService) UpdateChallengePolicy(ctx context.Context, projectID, routeType, routeID string, config UpdateChallengePolicyParams) (*Response[RouteChallengePolicy], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/network/challenge/update", projectID)
+	return Request[RouteChallengePolicy](ctx, s.client, "PUT", path, map[string]any{"routeType": routeType, "routeId": routeID, "config": config})
+}
+
+func (s *NetworkService) CreateChallengeBypassKey(ctx context.Context, projectID, policyID, name string, allowedPaths []string, expiresAt *time.Time) (*Response[CreatedChallengeBypassKey], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/network/challenge/keys/create", projectID)
+	return Request[CreatedChallengeBypassKey](ctx, s.client, "POST", path, map[string]any{"policyId": policyID, "name": name, "allowedPaths": allowedPaths, "expiresAt": expiresAt})
+}
+
+func (s *NetworkService) RevokeChallengeBypassKey(ctx context.Context, projectID, policyID, keyID string) (*Response[map[string]bool], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/network/challenge/keys/revoke", projectID)
+	return Request[map[string]bool](ctx, s.client, "POST", path, map[string]string{"policyId": policyID, "keyId": keyID})
+}
+
+func (s *NetworkService) RetryChallengePolicy(ctx context.Context, projectID, policyID string) (*Response[RouteChallengePolicy], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/network/challenge/retry", projectID)
+	return Request[RouteChallengePolicy](ctx, s.client, "POST", path, map[string]string{"policyId": policyID})
+}
+
+func (s *NetworkService) GetChallengeAnalytics(ctx context.Context, projectID, domain, window string) (*Response[ChallengeAnalytics], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/network/challenge/analytics?domain=%s&range=%s", projectID, url.QueryEscape(domain), url.QueryEscape(window))
+	return Request[ChallengeAnalytics](ctx, s.client, "GET", path, nil)
 }
 
 // --- Ports ---
