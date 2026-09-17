@@ -60,9 +60,9 @@ export interface Subaccount {
   id: string;
   name: string;
   externalRef?: string | null;
-  status: 'active' | 'suspended' | 'closing' | 'closed';
+  status: "active" | "suspended" | "closing" | "closed";
   backingOrganizationId: string;
-  parentType: 'user' | 'organization';
+  parentType: "user" | "organization";
   parentId: string;
   createdAt: string;
   updatedAt: string;
@@ -130,7 +130,7 @@ export interface Project {
   name: string;
   organizationId?: string;
   region: string;
-  status: 'active' | 'suspended' | 'deleted';
+  status: "active" | "suspended" | "deleted";
   createdAt: string;
   updatedAt: string;
 }
@@ -143,7 +143,7 @@ export interface CreateProjectParams {
 
 export interface PortMapping {
   container: number;
-  protocol: 'tcp' | 'udp';
+  protocol: "tcp" | "udp";
   publicPort?: number;
 }
 
@@ -178,7 +178,7 @@ export interface Container {
   name: string;
   projectId: string;
   projectName?: string;
-  status: 'RUNNING' | 'STOPPED' | 'BUILDING' | 'CRASHED';
+  status: "RUNNING" | "STOPPED" | "BUILDING" | "CRASHED";
   sourceType: string;
   sourceImageDisplay: string;
   actualImageDisplay?: string;
@@ -271,11 +271,11 @@ export interface NetworkAccessKey {
 
 export interface NetworkFirewallRule {
   id: string;
-  direction: 'inbound' | 'outbound';
-  protocol: 'tcp' | 'udp' | 'icmp' | 'all';
+  direction: "inbound" | "outbound";
+  protocol: "tcp" | "udp" | "icmp" | "all";
   portRange?: string;
   cidr: string;
-  action: 'allow' | 'deny';
+  action: "allow" | "deny";
 }
 
 export interface NetworkFirewall {
@@ -288,13 +288,91 @@ export interface NetworkLog {
   timestamp: string;
   sourceIp: string;
   destPort: number;
-  action: 'allow' | 'deny';
+  action: "allow" | "deny";
   bytes?: number;
 }
 
 export interface NetworkProxy {
   proxyUrl: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
+}
+
+export type ChallengeMode =
+  "always" | "adaptive" | "sensitive_paths" | "under_attack";
+export type ChallengeFailureMode = "risk_based" | "fail_open" | "fail_closed";
+export type ChallengeRouteType =
+  | "container_endpoint"
+  | "custom_domain"
+  | "load_balancer_domain"
+  | "load_balancer_custom_domain";
+export interface ChallengePathRule {
+  path: string;
+  match: "exact" | "prefix";
+  methods?: string[];
+}
+export interface ChallengeBypassKey {
+  id: string;
+  name: string;
+  tokenPrefix: string;
+  status: string;
+  allowedPaths: string[];
+  expiresAt?: string | null;
+  lastUsedAt?: string | null;
+}
+export interface RouteChallengePolicy {
+  id: string;
+  projectId: string;
+  routeType: ChallengeRouteType;
+  routeId: string;
+  domainName: string;
+  enabled: boolean;
+  mode: ChallengeMode;
+  policyRevision: number;
+  clearanceTtlSeconds: number;
+  failureMode: ChallengeFailureMode;
+  allowVerifiedCrawlers: boolean;
+  protectedRules: ChallengePathRule[];
+  bypassRules: ChallengePathRule[];
+  bypassCidrs: string[];
+  injectHeaders: boolean;
+  syncStatus: "pending" | "active" | "error" | "unsupported";
+  syncError?: string | null;
+  bypassKeys?: ChallengeBypassKey[];
+}
+export interface UpdateChallengePolicyParams {
+  enabled: boolean;
+  mode?: ChallengeMode;
+  clearanceTtlSeconds?: number;
+  failureMode?: ChallengeFailureMode;
+  allowVerifiedCrawlers?: boolean;
+  protectedRules?: ChallengePathRule[];
+  bypassRules?: ChallengePathRule[];
+  bypassCidrs?: string[];
+  injectHeaders?: boolean;
+}
+export interface ChallengeRoute {
+  routeType: ChallengeRouteType;
+  routeId: string;
+  hostname: string;
+  label: string;
+  challengePolicy: RouteChallengePolicy | null;
+}
+export interface CreatedChallengeBypassKey {
+  id: string;
+  name: string;
+  prefix: string;
+  token: string;
+  allowedPaths: string[];
+  expiresAt?: string | null;
+}
+export interface ChallengeAnalytics {
+  range: "24h" | "7d" | "30d";
+  sampledRequests: number;
+  counts: Record<string, number>;
+  solveRate: number | null;
+  averageProofLatencyMs: number | null;
+  topChallengedPaths: Array<{ path: string; count: number }>;
+  truncated: boolean;
 }
 
 // ==========================================
@@ -303,14 +381,14 @@ export interface NetworkProxy {
 export interface PortReservation {
   reservationId: string;
   port: number;
-  protocol: 'tcp' | 'udp';
-  status: 'reserved' | 'mapped';
+  protocol: "tcp" | "udp";
+  status: "reserved" | "mapped";
   mappedContainerId?: string;
   mappedContainerPort?: number;
 }
 
 export interface ReservePortParams {
-  protocol: 'tcp' | 'udp';
+  protocol: "tcp" | "udp";
   port?: number;
 }
 
@@ -363,7 +441,7 @@ export interface RegistryWebhook {
 
 export interface ImageScanResult {
   imageId: string;
-  status: 'clean' | 'vulnerabilities_found' | 'scanning' | 'failed';
+  status: "clean" | "vulnerabilities_found" | "scanning" | "failed";
   criticalCount: number;
   highCount: number;
   mediumCount: number;
@@ -378,7 +456,7 @@ export interface SubdomainReservation {
   subdomainId: string;
   subdomain: string;
   fullDomain: string;
-  status: 'active' | 'pending';
+  status: "active" | "pending";
   createdAt: string;
 }
 
@@ -393,7 +471,7 @@ export interface TeamMember {
   userId: string;
   name: string;
   email: string;
-  role: 'owner' | 'admin' | 'member' | 'viewer';
+  role: "owner" | "admin" | "member" | "viewer";
   permissions?: string[];
   joinedAt: string;
 }
@@ -401,14 +479,14 @@ export interface TeamMember {
 export interface TeamInvitation {
   invitationId: string;
   email: string;
-  role: 'admin' | 'member' | 'viewer';
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  role: "admin" | "member" | "viewer";
+  status: "pending" | "accepted" | "declined" | "expired";
   createdAt: string;
 }
 
 export interface CreateTeamInvitationParams {
   email: string;
-  role?: 'admin' | 'member' | 'viewer';
+  role?: "admin" | "member" | "viewer";
 }
 
 // ==========================================
@@ -419,7 +497,7 @@ export interface ProjectTunnel {
   name: string;
   targetPort: number;
   publicUrl: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   createdAt: string;
 }
 
@@ -436,7 +514,7 @@ export interface Volume {
   name: string;
   sizeGb: number;
   mountPoint?: string;
-  status: 'bound' | 'unbound';
+  status: "bound" | "unbound";
   labels?: Record<string, string>;
   createdAt: string;
 }
@@ -516,7 +594,7 @@ export interface OrgMember {
   id: string;
   userId: string;
   email: string;
-  role: 'owner' | 'admin' | 'member';
+  role: "owner" | "admin" | "member";
   joinedAt: string;
 }
 
@@ -544,7 +622,7 @@ export interface GpuInstance {
   name: string;
   gpuType: string;
   gpuCount: number;
-  status: 'RUNNING' | 'PROVISIONING' | 'STOPPED';
+  status: "RUNNING" | "PROVISIONING" | "STOPPED";
   ipAddress?: string;
   createdAt: string;
 }
@@ -553,7 +631,7 @@ export interface GpuInstance {
 // System Models
 // ==========================================
 export interface SystemHealth {
-  status: 'ok' | 'degraded' | 'down';
+  status: "ok" | "degraded" | "down";
   version: string;
   uptimeSeconds: number;
   timestamp: string;
