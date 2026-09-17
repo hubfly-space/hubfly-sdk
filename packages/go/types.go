@@ -240,11 +240,11 @@ type NetworkAccess struct {
 }
 
 type NetworkAccessKey struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	KeyMasked   string     `json:"keyMasked"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	KeyMasked string     `json:"keyMasked"`
+	CreatedAt time.Time  `json:"createdAt"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 }
 
 type NetworkFirewallRule struct {
@@ -273,6 +273,80 @@ type NetworkLog struct {
 type NetworkProxy struct {
 	ProxyURL string `json:"proxyUrl"`
 	Status   string `json:"status"`
+}
+
+type ChallengePathRule struct {
+	Path    string   `json:"path"`
+	Match   string   `json:"match"`
+	Methods []string `json:"methods,omitempty"`
+}
+type ChallengeBypassKey struct {
+	ID           string     `json:"id"`
+	Name         string     `json:"name"`
+	TokenPrefix  string     `json:"tokenPrefix"`
+	Status       string     `json:"status"`
+	AllowedPaths []string   `json:"allowedPaths"`
+	ExpiresAt    *time.Time `json:"expiresAt,omitempty"`
+	LastUsedAt   *time.Time `json:"lastUsedAt,omitempty"`
+}
+type RouteChallengePolicy struct {
+	ID                    string               `json:"id"`
+	ProjectID             string               `json:"projectId"`
+	RouteType             string               `json:"routeType"`
+	RouteID               string               `json:"routeId"`
+	DomainName            string               `json:"domainName"`
+	Enabled               bool                 `json:"enabled"`
+	Mode                  string               `json:"mode"`
+	PolicyRevision        int                  `json:"policyRevision"`
+	ClearanceTTLSeconds   int                  `json:"clearanceTtlSeconds"`
+	FailureMode           string               `json:"failureMode"`
+	AllowVerifiedCrawlers bool                 `json:"allowVerifiedCrawlers"`
+	ProtectedRules        []ChallengePathRule  `json:"protectedRules"`
+	BypassRules           []ChallengePathRule  `json:"bypassRules"`
+	BypassCIDRs           []string             `json:"bypassCidrs"`
+	InjectHeaders         bool                 `json:"injectHeaders"`
+	SyncStatus            string               `json:"syncStatus"`
+	SyncError             *string              `json:"syncError,omitempty"`
+	BypassKeys            []ChallengeBypassKey `json:"bypassKeys,omitempty"`
+}
+type UpdateChallengePolicyParams struct {
+	Enabled               bool                `json:"enabled"`
+	Mode                  string              `json:"mode,omitempty"`
+	ClearanceTTLSeconds   int                 `json:"clearanceTtlSeconds,omitempty"`
+	FailureMode           string              `json:"failureMode,omitempty"`
+	AllowVerifiedCrawlers *bool               `json:"allowVerifiedCrawlers,omitempty"`
+	ProtectedRules        []ChallengePathRule `json:"protectedRules,omitempty"`
+	BypassRules           []ChallengePathRule `json:"bypassRules,omitempty"`
+	BypassCIDRs           []string            `json:"bypassCidrs,omitempty"`
+	InjectHeaders         *bool               `json:"injectHeaders,omitempty"`
+}
+type ChallengeRoute struct {
+	RouteType       string                `json:"routeType"`
+	RouteID         string                `json:"routeId"`
+	Hostname        string                `json:"hostname"`
+	Label           string                `json:"label"`
+	ChallengePolicy *RouteChallengePolicy `json:"challengePolicy"`
+}
+type CreatedChallengeBypassKey struct {
+	ID           string     `json:"id"`
+	Name         string     `json:"name"`
+	Prefix       string     `json:"prefix"`
+	Token        string     `json:"token"`
+	AllowedPaths []string   `json:"allowedPaths"`
+	ExpiresAt    *time.Time `json:"expiresAt,omitempty"`
+}
+
+type ChallengeAnalytics struct {
+	Range                 string         `json:"range"`
+	SampledRequests       int            `json:"sampledRequests"`
+	Counts                map[string]int `json:"counts"`
+	SolveRate             *float64       `json:"solveRate"`
+	AverageProofLatencyMs *float64       `json:"averageProofLatencyMs"`
+	TopChallengedPaths    []struct {
+		Path  string `json:"path"`
+		Count int    `json:"count"`
+	} `json:"topChallengedPaths"`
+	Truncated bool `json:"truncated"`
 }
 
 // ==========================================
@@ -357,12 +431,12 @@ type CreateSubdomainParams struct {
 // ==========================================
 
 type TeamMember struct {
-	UserID    string   `json:"userId"`
-	Name      string   `json:"name"`
-	Email     string   `json:"email"`
-	Role      string   `json:"role"`
+	UserID      string   `json:"userId"`
+	Name        string   `json:"name"`
+	Email       string   `json:"email"`
+	Role        string   `json:"role"`
 	Permissions []string `json:"permissions,omitempty"`
-	JoinedAt  string   `json:"joinedAt"`
+	JoinedAt    string   `json:"joinedAt"`
 }
 
 type TeamInvitation struct {
@@ -421,11 +495,11 @@ type CreateVolumeParams struct {
 // ==========================================
 
 type ProjectWebhook struct {
-	WebhookID string   `json:"webhookId"`
-	URL       string   `json:"url"`
-	Events    []string `json:"events"`
-	Secret    string   `json:"secret,omitempty"`
-	Active    bool     `json:"active"`
+	WebhookID string    `json:"webhookId"`
+	URL       string    `json:"url"`
+	Events    []string  `json:"events"`
+	Secret    string    `json:"secret,omitempty"`
+	Active    bool      `json:"active"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
