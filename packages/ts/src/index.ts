@@ -28,3 +28,28 @@ export { MarketplaceModule } from './modules/marketplace.js';
 export { CoursesModule } from './modules/courses.js';
 export { SubaccountsModule } from './modules/subaccounts.js';
 export { PlatformKeysModule } from './modules/platform-keys.js';
+export { ManagedModule, ManagedInstancesSubModule, ManagedDatabasesSubModule } from './modules/managed.js';
+export type { WaitForOperationOptions } from './modules/managed.js';
+export { ManagedRealtimeSubModule } from './modules/managed-realtime.js';
+export type { ManagedRealtimePublishInput, ManagedRealtimeSendInput } from './modules/managed-realtime.js';
+export {
+  ManagedErrorCodes,
+  isManagedApiError,
+  toSocketId,
+  isE2EConnectionId,
+  REALTIME_E2E_EVENT,
+} from './modules/managed-core.js';
+export type { ManagedErrorCode } from './modules/managed-core.js';
+export * from './modules/managed-types.js';
+export { InspectorSession, RealtimeInspectorError, describeInspectorClose } from './modules/managed-inspector.js';
+export type {
+  InspectorReady,
+  InspectorEvent,
+  InspectorFamily,
+  InspectorFilter,
+  InspectorCallbacks,
+  InspectorConnectOptions,
+  InspectorCloseInfo,
+  InspectorWebSocket,
+  InspectorWebSocketFactory,
+} from './modules/managed-inspector.js';
