@@ -10,6 +10,8 @@ Official client SDK monorepo for the **Hubfly Cloud Platform API** (`https://api
 | :--- | :--- | :--- | :--- |
 | **TypeScript / Node.js** | [`packages/ts`](packages/ts) | `@hubfly/sdk` | Production Ready |
 | **Go** | [`packages/go`](packages/go) | `github.com/hubfly/hubfly-sdk/go` | Production Ready |
+| **HubFly Realtime (TypeScript)**: client, server, E2E | [`packages/realtime`](packages/realtime) | `@hubfly/realtime` (`/server`, `/e2e`) | Preview |
+| **HubFly Realtime (Go)**: server | [`packages/go/realtime`](packages/go/realtime) | `github.com/hubfly/hubfly-sdk/go/realtime` (nested module) | Preview |
 
 ---
 
@@ -72,6 +74,40 @@ func main() {
 }
 ```
 
+### HubFly Realtime
+Managed, Pusher-compatible WebSockets with resume, recovery, direct messages and end-to-end
+encryption. See [`packages/realtime`](packages/realtime/README.md) (browser, Next.js, Node/Bun/Workers,
+Laravel Echo, E2E) and [`packages/go/realtime`](packages/go/realtime/README.md).
+
+```typescript
+import { Realtime } from '@hubfly/realtime';                // browser
+import { RealtimeServer } from '@hubfly/realtime/server';   // your backend
+
+const rt = new Realtime({ url, key, authEndpoint: '/api/realtime/auth' });
+const { id } = await rt.connect();
+rt.subscribe('private-orders').bind('order.created', (order) => render(order));
+
+await RealtimeServer.fromEnv().channel('private-orders').publish('order.created', { id: 42 });
+```
+
+### Managed Services (Databases + Realtime) through the Dashboard API
+`@hubfly/sdk` (`hubfly.managed`) and the Go SDK (`client.Managed`) manage databases and realtime
+servers: lifecycle, operations, metrics, network, alerts, the database-specific endpoints, and every
+realtime endpoint (apps, keys, webhooks, publish/send, channels, connections, history, insights, usage,
+inspector, bindings). See [`packages/ts`](packages/ts/README.md#5-managed-services-databases-and-realtime-servers)
+and [`packages/go`](packages/go/README.md#4-managed-services-databases-and-realtime-servers).
+
+```typescript
+const { data } = await hubfly.managed.realtime.send(projectId, instanceId, appId, {
+  event: 'ping', data: { hello: 'world' }, userId: 'user_1',
+});
+console.log(data.counts); // { delivered, buffered, queued, offline }
+```
+
+Their request and response types are generated from the Dashboard's `openapi.json` by
+`scripts/generate-managed.ts` (TypeScript `packages/ts/src/modules/managed-types.ts`, Go
+`packages/go/managed_types.go`; do not edit them by hand).
+
 ---
 
 ## Monorepo Commands
@@ -88,6 +124,14 @@ make build-ts
 
 # Build Go SDK only
 make build-go
+
+# HubFly Realtime: build/test @hubfly/realtime, test the Go realtime module
+make build-realtime test-realtime test-go-realtime
+
+# Managed Services: regenerate types from ../hubfly-dashboard/openapi.json (or OPENAPI_PATH),
+# then check that every managed operation has a TS and Go method and the types are in sync
+make generate-managed
+make verify-spec-managed
 ```
 
 ---
