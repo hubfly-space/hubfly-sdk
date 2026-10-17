@@ -1,0 +1,79 @@
+{
+  "name": "@hubfly/realtime",
+  "version": "0.1.0",
+  "description": "HubFly Realtime SDK: browser/React Native client, server helpers (Workers, Bun, Node, Deno) and end-to-end encryption. Speaks the Pusher Channels protocol 7 plus HubFly v1 extensions.",
+  "author": "Hubfly Cloud Platform",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./server": {
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      }
+    },
+    "./e2e": {
+      "import": {
+        "types": "./dist/e2e.d.ts",
+        "default": "./dist/e2e.js"
+      },
+      "require": {
+        "types": "./dist/e2e.d.cts",
+        "default": "./dist/e2e.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "hubfly",
+    "realtime",
+    "websocket",
+    "pusher",
+    "e2e",
+    "encryption"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^1.3.0",
+    "@noble/hashes": "^1.8.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.3",
+    "pusher": "^5.3.4",
+    "pusher-js": "^8.6.0",
+    "tsup": "^8.3.6",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
+    "typescript": "^5.7.3"
+  }
+}
