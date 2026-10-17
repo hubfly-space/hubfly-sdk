@@ -1,5 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { GENERATED_MARKER, checkManaged, isManagedPath } from './generate-managed';
+
+// Usage: bun run scripts/verify-spec-diff.ts [--strict] [--scope managed]
+//   --scope managed  only the Managed Services operations (paths with a /managed
+//                    segment); also checks that the generated managed types
+//                    (scripts/generate-managed.ts) match the spec.
+//   --strict         exit 1 on any uncovered operation (or managed type drift).
 
 interface OpenApiSpec {
   paths?: Record<string, Record<string, {
@@ -14,6 +21,10 @@ interface OpenApiSpec {
 
 interface DiffReport {
   timestamp: string;
+  scope: string;
+  /** Generated managed type files that differ from the spec (null when not checked). */
+  managedTypeDrift: string[] | null;
+  managedTypeError?: string;
   totalOpenApiOperations: number;
   tsCoveragePercent: number;
   goCoveragePercent: number;
@@ -78,7 +89,11 @@ function scanSdkCode(sdkDir: string, extension: string): string {
       if (entry.isDirectory() && entry.name !== 'node_modules' && entry.name !== 'dist') {
         readDirRecursive(fullPath);
       } else if (entry.isFile() && entry.name.endsWith(extension) && !entry.name.endsWith('.test.ts') && !entry.name.endsWith('_test.go')) {
-        combined += fs.readFileSync(fullPath, 'utf8') + '\n';
+        const content = fs.readFileSync(fullPath, 'utf8');
+        // Generated tables name every operation by design; coverage counts
+        // only the hand-written methods that call them.
+        if (content.includes(GENERATED_MARKER)) continue;
+        combined += content + '\n';
       }
     }
   }
@@ -108,9 +123,18 @@ function isPathInCode(openApiPath: string, code: string): boolean {
   return false;
 }
 
+function scopeArg(): string {
+  const index = process.argv.indexOf('--scope');
+  if (index >= 0) return process.argv[index + 1] ?? 'all';
+  const inline = process.argv.find((arg) => arg.startsWith('--scope='));
+  return inline ? inline.slice('--scope='.length) : 'all';
+}
+
 function runVerification(): DiffReport {
   const specPath = resolveOpenApiSpecPath();
-  const operations = parseOpenApiOperations(specPath);
+  const scope = scopeArg();
+  if (scope !== 'all' && scope !== 'managed') throw new Error(`Unknown --scope ${scope} (use all or managed)`);
+  const operations = parseOpenApiOperations(specPath).filter((op) => scope === 'all' || isManagedPath(op.path));
 
   const tsSdkDir = path.resolve(import.meta.dirname, '../packages/ts/src');
   const goSdkDir = path.resolve(import.meta.dirname, '../packages/go');
@@ -160,8 +184,19 @@ function runVerification(): DiffReport {
   const tsCoverage = Math.round((tsMatchedCount / operations.length) * 100);
   const goCoverage = Math.round((goMatchedCount / operations.length) * 100);
 
+  let managedTypeDrift: string[] | null = null;
+  let managedTypeError: string | undefined;
+  try {
+    managedTypeDrift = checkManaged(specPath);
+  } catch (error) {
+    managedTypeError = error instanceof Error ? error.message : String(error);
+  }
+
   return {
     timestamp: new Date().toISOString(),
+    scope,
+    managedTypeDrift,
+    managedTypeError,
     totalOpenApiOperations: operations.length,
     tsCoveragePercent: tsCoverage,
     goCoveragePercent: goCoverage,
@@ -175,6 +210,7 @@ function printReport(report: DiffReport) {
   console.log('         HUBFLY SDK & OPENAPI SPEC VERIFICATION PIPELINE       ');
   console.log('=============================================================\n');
   console.log(`Timestamp:               ${report.timestamp}`);
+  console.log(`Scope:                    ${report.scope === 'managed' ? 'Managed Services (/managed paths)' : 'all operations'}`);
   console.log(`Total OpenAPI Operations: ${report.totalOpenApiOperations}`);
   console.log(`TypeScript SDK Coverage:  ${report.tsCoveragePercent}%`);
   console.log(`Go SDK Coverage:          ${report.goCoveragePercent}%\n`);
@@ -205,10 +241,22 @@ function printReport(report: DiffReport) {
     console.log('✅ Go SDK is 100% synchronized with OpenAPI spec!');
   }
 
+  if (report.managedTypeError) {
+    console.log(`⚠️  Managed types not checked: ${report.managedTypeError}\n`);
+  } else if (report.managedTypeDrift && report.managedTypeDrift.length > 0) {
+    console.log('⚠️  Generated managed types drift from the spec (run: make generate-managed):');
+    for (const file of report.managedTypeDrift) console.log(`   - ${file}`);
+    console.log('');
+  } else {
+    console.log('✅ Generated managed types (TS + Go) match the spec.');
+  }
+
   console.log('=============================================================\n');
 
   const strictMode = process.argv.includes('--strict');
-  const hasDiffs = report.missingTsOperations.length > 0 || report.missingGoOperations.length > 0;
+  const typeProblem =
+    report.scope === 'managed' && (report.managedTypeError !== undefined || (report.managedTypeDrift?.length ?? 0) > 0);
+  const hasDiffs = report.missingTsOperations.length > 0 || report.missingGoOperations.length > 0 || typeProblem;
 
   if (strictMode && hasDiffs) {
     console.error('ERROR: SDK spec drift detected in strict mode!');
