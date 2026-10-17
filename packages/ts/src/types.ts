@@ -22,6 +22,8 @@ export interface ApiErrorPayload {
   message: string;
   code?: string;
   details?: Record<string, unknown>;
+  /** Server-side error id (5xx errors only). */
+  errorId?: string;
 }
 
 /**

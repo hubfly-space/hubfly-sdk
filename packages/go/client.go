@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,10 +18,59 @@ type APIError struct {
 	StatusCode int    `json:"statusCode"`
 	Message    string `json:"message"`
 	RawPayload string `json:"rawPayload,omitempty"`
+	// Code is the machine-readable error code (error.code), e.g. "MANAGED_REALTIME_ENGINE_UNSUPPORTED".
+	Code string `json:"code,omitempty"`
+	// Details holds extra error details the API chose to expose (error.details).
+	Details json.RawMessage `json:"details,omitempty"`
+	// ErrorID identifies a 5xx error on the server; quote it when contacting support.
+	ErrorID string `json:"errorId,omitempty"`
+	// RequestID is the request id from the error envelope's meta.
+	RequestID string `json:"requestId,omitempty"`
 }
 
 func (e *APIError) Error() string {
+	if e.Code != "" {
+		return fmt.Sprintf("hubfly api error [HTTP %d %s]: %s", e.StatusCode, e.Code, e.Message)
+	}
 	return fmt.Sprintf("hubfly api error [HTTP %d]: %s", e.StatusCode, e.Message)
+}
+
+// IsAPIErrorCode reports whether err is (or wraps) an *APIError with the given code.
+func IsAPIErrorCode(err error, code string) bool {
+	var apiErr *APIError
+	return errors.As(err, &apiErr) && apiErr.Code == code
+}
+
+// parseAPIError reads an error envelope: {"ok":false,"error":"text"} or
+// {"ok":false,"error":{"code","message","details","errorId"},"meta":{"requestId"}}.
+func parseAPIError(statusCode int, body []byte) *APIError {
+	apiErr := &APIError{StatusCode: statusCode, RawPayload: string(body)}
+	var envelope struct {
+		Error json.RawMessage `json:"error"`
+		Meta  Meta            `json:"meta"`
+	}
+	if json.Unmarshal(body, &envelope) == nil {
+		apiErr.RequestID = envelope.Meta.RequestID
+		var text string
+		var payload struct {
+			Code    string          `json:"code"`
+			Message string          `json:"message"`
+			Details json.RawMessage `json:"details"`
+			ErrorID string          `json:"errorId"`
+		}
+		if json.Unmarshal(envelope.Error, &text) == nil {
+			apiErr.Message = text
+		} else if json.Unmarshal(envelope.Error, &payload) == nil {
+			apiErr.Message = payload.Message
+			apiErr.Code = payload.Code
+			apiErr.Details = payload.Details
+			apiErr.ErrorID = payload.ErrorID
+		}
+	}
+	if apiErr.Message == "" {
+		apiErr.Message = http.StatusText(statusCode)
+	}
+	return apiErr
 }
 
 // Option configures a Client
@@ -92,6 +142,9 @@ type Client struct {
 	Github        *GithubService
 	Marketplace   *MarketplaceService
 	Courses       *CoursesService
+	// Managed holds the Managed Services (databases and realtime servers):
+	// Managed.Instances, Managed.Databases and Managed.Realtime.
+	Managed *ManagedService
 }
 
 // NewClient initializes a new Hubfly API Client
@@ -138,6 +191,7 @@ func NewClient(opts ...Option) *Client {
 	c.Github = &GithubService{client: c}
 	c.Marketplace = &MarketplaceService{client: c}
 	c.Courses = &CoursesService{client: c}
+	c.Managed = newManagedService(c)
 
 	return c
 }
@@ -181,17 +235,7 @@ func Request[T any](ctx context.Context, c *Client, method, path string, body in
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		var errResp ErrorResponse
-		_ = json.Unmarshal(respBytes, &errResp)
-		errMsg := errResp.Error
-		if errMsg == "" {
-			errMsg = http.StatusText(resp.StatusCode)
-		}
-		return nil, &APIError{
-			StatusCode: resp.StatusCode,
-			Message:    errMsg,
-			RawPayload: string(respBytes),
-		}
+		return nil, parseAPIError(resp.StatusCode, respBytes)
 	}
 
 	var result Response[T]

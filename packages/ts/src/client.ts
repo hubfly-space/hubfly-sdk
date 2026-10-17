@@ -19,6 +19,7 @@ import { MarketplaceModule } from './modules/marketplace.js';
 import { CoursesModule } from './modules/courses.js';
 import { SubaccountsModule } from './modules/subaccounts.js';
 import { PlatformKeysModule } from './modules/platform-keys.js';
+import { ManagedModule } from './modules/managed.js';
 
 /**
  * Custom Error thrown when Hubfly API returns an error response
@@ -27,6 +28,14 @@ export class HubflyApiError extends Error {
   public readonly statusCode: number;
   public readonly meta?: unknown;
   public readonly rawResponse?: unknown;
+  /** Machine-readable error code, e.g. `MANAGED_REALTIME_ENGINE_UNSUPPORTED` (from `error.code`). */
+  public readonly code?: string;
+  /** Extra error details the API chose to expose (from `error.details`). */
+  public readonly details?: unknown;
+  /** Server-side error id for 5xx errors; quote it when contacting support. */
+  public readonly errorId?: string;
+  /** The request id from the error envelope's `meta`. */
+  public readonly requestId?: string;
 
   constructor(message: string, statusCode: number, rawResponse?: unknown, meta?: unknown) {
     super(message);
@@ -34,6 +43,16 @@ export class HubflyApiError extends Error {
     this.statusCode = statusCode;
     this.rawResponse = rawResponse;
     this.meta = meta;
+    const envelope = rawResponse as { error?: unknown; meta?: { requestId?: unknown } } | undefined;
+    const error = envelope && typeof envelope === 'object' ? envelope.error : undefined;
+    if (error && typeof error === 'object') {
+      const payload = error as { code?: unknown; details?: unknown; errorId?: unknown };
+      if (typeof payload.code === 'string') this.code = payload.code;
+      if (payload.details !== undefined) this.details = payload.details;
+      if (typeof payload.errorId === 'string') this.errorId = payload.errorId;
+    }
+    const requestId = (meta as { requestId?: unknown } | undefined)?.requestId ?? envelope?.meta?.requestId;
+    if (typeof requestId === 'string') this.requestId = requestId;
     Object.setPrototypeOf(this, HubflyApiError.prototype);
   }
 }
@@ -64,6 +83,8 @@ export class HubflyClient {
   public readonly courses: CoursesModule;
   public readonly subaccounts: SubaccountsModule;
   public readonly platformKeys: PlatformKeysModule;
+  /** Managed Services: databases and realtime servers. */
+  public readonly managed: ManagedModule;
 
   constructor(options: HubflyClientOptions = {}) {
     this.baseUrl = (options.baseUrl || 'https://api.hubfly.space').replace(/\/$/, '');
@@ -92,6 +113,7 @@ export class HubflyClient {
     this.courses = new CoursesModule(this);
     this.subaccounts = new SubaccountsModule(this);
     this.platformKeys = new PlatformKeysModule(this);
+    this.managed = new ManagedModule(this);
   }
 
   /**
