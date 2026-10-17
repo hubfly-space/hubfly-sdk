@@ -1,0 +1,37 @@
+{
+  "generation": 1,
+  "apps": [
+    {
+      "app_id": "1000001",
+      "name": "sdk-live",
+      "enabled": true,
+      "settings": {
+        "allowed_origins": [],
+        "client_events": true,
+        "subscription_count_events": true,
+        "history": { "mode": "memory", "ttl_seconds": 120, "max_messages": 100 },
+        "sessions": { "detach_ttl_seconds": 60 },
+        "offline_queue": { "enabled": true, "ttl_seconds": 300, "max_messages": 100 },
+        "encryption": "optional"
+      },
+      "keys": [
+        { "key": "sdklivetestkey000001", "secret": "sdk-live-secret-0123456789", "status": "active", "expires_at": null }
+      ]
+    },
+    {
+      "app_id": "1000002",
+      "name": "sdk-live-required",
+      "enabled": true,
+      "settings": {
+        "allowed_origins": [],
+        "client_events": true,
+        "history": { "mode": "memory", "ttl_seconds": 120, "max_messages": 100 },
+        "sessions": { "detach_ttl_seconds": 60 },
+        "encryption": "required"
+      },
+      "keys": [
+        { "key": "sdklivetestkey000002", "secret": "sdk-live-secret-required-0123", "status": "active", "expires_at": null }
+      ]
+    }
+  ]
+}
