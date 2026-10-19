@@ -10,8 +10,7 @@ npm install @hubfly/realtime
 ## Get started
 
 In the [HubFly Dashboard](https://dashboard.hubfly.space), create a Realtime
-server in **EU1**, then create an app. Copy its URL, app ID, key, and secret.
-Realtime is currently available in EU1 only.
+server, then create an app. Copy its URL, app ID, key, and secret.
 
 ### 1. Listen in the browser
 

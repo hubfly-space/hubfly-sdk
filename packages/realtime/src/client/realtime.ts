@@ -12,7 +12,7 @@ import type {
   WebSocketLike,
 } from './types';
 
-export const VERSION = '0.1.1';
+export const VERSION = '0.1.2';
 const USER = '#server-to-user-';
 const E2E_EVENT_RE = /^(client-)?hubfly\.e2e$/;
 
