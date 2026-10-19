@@ -1,6 +1,6 @@
 {
   "name": "@hubfly/realtime",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "JavaScript SDK for HubFly Realtime: live messaging, presence, and encrypted channels.",
   "homepage": "https://github.com/hubfly-space/hubfly-sdk/tree/main/packages/realtime#readme",
   "repository": {

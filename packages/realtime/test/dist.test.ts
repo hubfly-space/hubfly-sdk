@@ -41,7 +41,7 @@ describe.skipIf(!built || !node)('dist', () => {
 import { RealtimeServer } from '@hubfly/realtime/server';
 import * as e2e from '@hubfly/realtime/e2e';`),
     ]);
-    expect(out).toEqual({ version: '0.1.1', keyLen: 32, opened: { ok: true } });
+    expect(out).toEqual({ version: '0.1.2', keyLen: 32, opened: { ok: true } });
   });
 
   test('CJS entries work in Node, including the lazy e2e import', () => {
@@ -51,7 +51,7 @@ import * as e2e from '@hubfly/realtime/e2e';`),
 const { RealtimeServer } = require('@hubfly/realtime/server');
 const e2e = require('@hubfly/realtime/e2e');`)}})().catch((e) => { console.error(e); process.exit(1); });`,
     ]);
-    expect(out).toEqual({ version: '0.1.1', keyLen: 32, opened: { ok: true } });
+    expect(out).toEqual({ version: '0.1.2', keyLen: 32, opened: { ok: true } });
   });
 
   test('declarations type-check for node16 ESM and CJS consumers', () => {
