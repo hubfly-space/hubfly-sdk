@@ -1,7 +1,16 @@
 {
   "name": "@hubfly/realtime",
-  "version": "0.1.0",
-  "description": "HubFly Realtime SDK: browser/React Native client, server helpers (Workers, Bun, Node, Deno) and end-to-end encryption. Speaks the Pusher Channels protocol 7 plus HubFly v1 extensions.",
+  "version": "0.1.1",
+  "description": "JavaScript SDK for HubFly Realtime: live messaging, presence, and encrypted channels.",
+  "homepage": "https://github.com/hubfly-space/hubfly-sdk/tree/main/packages/realtime#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hubfly-space/hubfly-sdk.git",
+    "directory": "packages/realtime"
+  },
+  "bugs": {
+    "url": "https://github.com/hubfly-space/hubfly-sdk/issues"
+  },
   "author": "Hubfly Cloud Platform",
   "license": "MIT",
   "type": "module",
@@ -44,7 +53,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "docs"
   ],
   "engines": {
     "node": ">=18"
