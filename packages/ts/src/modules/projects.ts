@@ -161,6 +161,7 @@ export class LoadBalancersSubModule {
   ): Promise<ApiResponse<{ synced: boolean }>> {
     return this.client.request<{ synced: boolean }>(
       `/api/v1/projects/${projectId}/load-balancers/${lbId}/sync`,
+      { method: 'POST' },
     );
   }
 
@@ -507,6 +508,7 @@ export class RegistrySubModule {
   ): Promise<ApiResponse<ImageScanResult>> {
     return this.client.request<ImageScanResult>(
       `/api/v1/projects/${projectId}/registry/images/${imageId}/scan/trigger`,
+      { method: 'POST' },
     );
   }
 }
@@ -714,6 +716,7 @@ export class HibernationSubModule {
   ): Promise<ApiResponse<HibernationStatus>> {
     return this.client.request<HibernationStatus>(
       `/api/v1/projects/${projectId}/hibernation/hibernate`,
+      { method: 'POST' },
     );
   }
 
@@ -730,6 +733,7 @@ export class HibernationSubModule {
   ): Promise<ApiResponse<HibernationStatus>> {
     return this.client.request<HibernationStatus>(
       `/api/v1/projects/${projectId}/hibernation/restore`,
+      { method: 'POST' },
     );
   }
 }
