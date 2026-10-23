@@ -17,7 +17,7 @@ export class SubaccountsModule {
   }
 
   public async update(subaccountId: string, params: { name?: string; metadata?: Record<string, string>; maxProjects?: number | null; spendLimitMicroUsd?: string | null }): Promise<ApiResponse<Subaccount>> {
-    return this.client.request<Subaccount>(`/api/v1/subaccounts/${subaccountId}`, { method: 'POST', body: params });
+    return this.client.request<Subaccount>(`/api/v1/subaccounts/${subaccountId}/update`, { method: 'POST', body: params });
   }
 
   public async suspend(subaccountId: string): Promise<ApiResponse<Subaccount>> {
