@@ -25,6 +25,6 @@ export class GithubModule {
   }
 
   public async refreshToken(): Promise<ApiResponse<{ refreshed: boolean }>> {
-    return this.client.request<{ refreshed: boolean }>('/api/v1/github/refresh-token');
+    return this.client.request<{ refreshed: boolean }>('/api/v1/github/refresh-token', { method: 'POST' });
   }
 }
