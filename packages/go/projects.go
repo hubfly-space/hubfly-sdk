@@ -219,7 +219,7 @@ func (s *VolumesService) Remove(ctx context.Context, projectID, volumeID string)
 
 func (s *HibernationService) Hibernate(ctx context.Context, projectID string) (*Response[HibernationStatus], error) {
 	path := fmt.Sprintf("/api/v1/projects/%s/hibernation/hibernate", projectID)
-	return Request[HibernationStatus](ctx, s.client, "GET", path, nil)
+	return Request[HibernationStatus](ctx, s.client, "POST", path, nil)
 }
 
 func (s *HibernationService) Preview(ctx context.Context, projectID string) (*Response[HibernationPreview], error) {
@@ -229,5 +229,5 @@ func (s *HibernationService) Preview(ctx context.Context, projectID string) (*Re
 
 func (s *HibernationService) Restore(ctx context.Context, projectID string) (*Response[HibernationStatus], error) {
 	path := fmt.Sprintf("/api/v1/projects/%s/hibernation/restore", projectID)
-	return Request[HibernationStatus](ctx, s.client, "GET", path, nil)
+	return Request[HibernationStatus](ctx, s.client, "POST", path, nil)
 }
