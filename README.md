@@ -108,6 +108,19 @@ Their request and response types are generated from the Dashboard's `openapi.jso
 `scripts/generate-managed.ts` (TypeScript `packages/ts/src/modules/managed-types.ts`, Go
 `packages/go/managed_types.go`; do not edit them by hand).
 
+### Mailboxes (HubFly Mail)
+`hubfly.mail` / `client.Mail` administer mailboxes, people, sender identities, branding, storage and
+Mailbox API keys through the Dashboard API. `MailboxClient` (TypeScript) and the
+[`mailbox`](packages/go/mailbox) Go package read and send mail on the Mail node
+(`https://mail.hubmail.space/client/v1`) with a Mailbox API key (`hfmb_…`). See
+[`packages/ts`](packages/ts/README.md#6-mailboxes-hubfly-mail) and
+[`packages/go`](packages/go/README.md#5-mailboxes-hubfly-mail).
+
+```typescript
+const mailbox = new MailboxClient({ apiKey: process.env.HUBFLY_MAILBOX_KEY! });
+for await (const thread of mailbox.threads.iterate({ unread: true })) console.log(thread.subject);
+```
+
 ---
 
 ## Monorepo Commands
