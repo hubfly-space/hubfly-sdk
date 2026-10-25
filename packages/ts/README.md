@@ -198,6 +198,106 @@ to use another implementation. Refusals reject with `RealtimeInspectorError` (`c
 The types and the operation table are regenerated with `make generate-managed`, and
 `make verify-spec-managed` checks them against the spec (see the root README).
 
+### 6. Mailboxes (HubFly Mail)
+
+HubFly Mail keeps mail in mailboxes that share the Mail project's storage pool (1 GB by default).
+There are two clients:
+
+- `hubfly.mail` (Dashboard API, your HubFly token) administers mailboxes, address delivery, people,
+  sender identities, branding, storage, AI settings and Mailbox API keys.
+- `MailboxClient` (the Mail node, `https://mail.hubmail.space/client/v1`) reads and sends mail with a
+  Mailbox API key (`hfmb_…`). Its responses keep the node's snake_case field names.
+
+**1. Create a key in the Dashboard.** A key has scopes (`read`, `organize`, `send`) and a role per
+mailbox (`read`, `full`, `owner`). The secret is shown once.
+
+```typescript
+const { data: overview } = await hubfly.mail.mailboxes.list(projectId);
+const support = overview.mailboxes.find((m) => m.name === 'Support')!;
+const { data: identities } = await hubfly.mail.identities.list(projectId);
+
+const { data: created } = await hubfly.mail.mailboxKeys.create(projectId, {
+  name: 'helpdesk-bot',
+  scopes: ['read', 'organize', 'send'],
+  mailboxRoles: { [support.id]: 'full' },
+  identityIds: identities.filter((i) => i.address === 'support@acme.com').map((i) => i.id),
+});
+// Store created.secret (hfmb_…) in your secret manager now.
+```
+
+**2. Read the inbox.**
+
+```typescript
+import { MailboxClient } from '@hubfly/sdk';
+
+const mailbox = new MailboxClient({ apiKey: process.env.HUBFLY_MAILBOX_KEY! });
+
+const me = await mailbox.me(); // granted mailboxes, folders, identities, storage, state
+const page = await mailbox.threads.list({ mailboxId: support.id, unread: true, limit: 25 });
+const thread = await mailbox.threads.get(page.threads[0]!.id); // messages with sanitised bodies, notes
+```
+
+**3. Send a reply.** `from` must be one of `me.identities`. Attach files by uploading them first.
+
+```typescript
+const last = thread.messages[thread.messages.length - 1]!;
+const upload = await mailbox.uploads.create(pdfBytes, { filename: 'invoice.pdf', contentType: 'application/pdf' });
+
+const sent = await mailbox.send({
+  mailboxId: thread.mailbox_id,
+  from: 'support@acme.com',
+  to: [last.from],
+  subject: `Re: ${thread.subject}`,
+  text: 'Thanks, the invoice is attached.',
+  replyToMessageId: last.id,          // threads the reply
+  attachments: [{ uploadId: upload.id }],
+  undoSeconds: 10,                    // or sendAt: new Date(...) to schedule
+  idempotencyKey: `reply-${last.id}`, // safe to retry
+});
+// Changed your mind within 10 s: await mailbox.messages.cancelSend(sent.message!.id);
+await mailbox.threads.update({ ids: [thread.id], seen: true, moveTo: 'archive' });
+```
+
+**4. Page through everything.** `threads.iterate()` and `messages.iterate()` follow `next_cursor`
+for you; `threads.list()` returns one page.
+
+```typescript
+for await (const t of mailbox.threads.iterate({ folder: 'anywhere', q: 'from:bob has:attachment' })) {
+  console.log(t.last_at, t.subject);
+}
+```
+
+**5. Handle `storage_full`.** Every error is a `MailboxApiError` with `status` and `code`. When the
+pool or a mailbox cap is full, drafts and sends fail with 507 `storage_full` (inbound mail is
+retried by the sender's server until there is room). Deleting messages and emptying Trash or Spam
+always works.
+
+```typescript
+import { MailboxErrorCodes, isMailboxApiError } from '@hubfly/sdk';
+
+try {
+  await mailbox.send(reply);
+} catch (err) {
+  if (isMailboxApiError(err, MailboxErrorCodes.STORAGE_FULL)) {
+    console.warn(`${err.scope} full: ${err.usedBytes} of ${err.limitBytes} bytes`); // scope: 'pool' | 'mailbox'
+    const { largest } = await mailbox.storage({ mailboxId: err.mailboxId });   // the 30 biggest messages
+    // Free space: move to Trash, then empty it.
+    await mailbox.messages.update({ ids: largest.slice(0, 10).map((m) => m.id), moveTo: 'trash' });
+    const trash = me.folders.find((f) => f.mailbox_id === reply.mailboxId && f.role === 'trash')!;
+    await mailbox.folders.empty(trash.id);
+    // Or raise this mailbox's cap within the pool (mailboxes.update). Extra pool storage is coming soon.
+  } else if (isMailboxApiError(err, MailboxErrorCodes.RATE_LIMITED)) {
+    await new Promise((r) => setTimeout(r, (err.retryAfter ?? 2) * 1000));
+  } else {
+    throw err;
+  }
+}
+```
+
+Other codes: `send_limit_reached` (429, a person's hourly/daily limit), `attachment_too_large` (413),
+`sender_not_ready` (409, the identity's domain cannot send yet), `too_late` (409, cancel after
+dispatch). Raw messages and attachments download as `MailboxFile` (`data: ArrayBuffer`, `blob()`).
+
 ---
 
 ## License

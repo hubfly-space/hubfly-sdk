@@ -20,6 +20,7 @@ import { CoursesModule } from './modules/courses.js';
 import { SubaccountsModule } from './modules/subaccounts.js';
 import { PlatformKeysModule } from './modules/platform-keys.js';
 import { ManagedModule } from './modules/managed.js';
+import { MailModule } from './modules/mail.js';
 
 /**
  * Custom Error thrown when Hubfly API returns an error response
@@ -85,6 +86,8 @@ export class HubflyClient {
   public readonly platformKeys: PlatformKeysModule;
   /** Managed Services: databases and realtime servers. */
   public readonly managed: ManagedModule;
+  /** HubFly Mail mailbox administration (mailboxes, people, identities, keys). */
+  public readonly mail: MailModule;
 
   constructor(options: HubflyClientOptions = {}) {
     this.baseUrl = (options.baseUrl || 'https://api.hubfly.space').replace(/\/$/, '');
@@ -114,6 +117,7 @@ export class HubflyClient {
     this.subaccounts = new SubaccountsModule(this);
     this.platformKeys = new PlatformKeysModule(this);
     this.managed = new ManagedModule(this);
+    this.mail = new MailModule(this);
   }
 
   /**
