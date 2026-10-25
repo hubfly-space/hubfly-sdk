@@ -187,6 +187,84 @@ is built (`hubfly.ToSocketID` does the same), and `Send` refuses plaintext to su
 `MANAGED_REALTIME_E2E_CONNECTION_ID`. Send sealed messages from your own server with
 [`github.com/hubfly/hubfly-sdk/go/realtime`](realtime/README.md).
 
+### 5. Mailboxes (HubFly Mail)
+
+HubFly Mail keeps mail in mailboxes that share the Mail project's storage pool (1 GB by default).
+`client.Mail` (Dashboard API, your HubFly token) administers mailboxes, address delivery, people,
+sender identities, branding, storage, AI settings and Mailbox API keys. The
+[`mailbox`](mailbox) package talks to the Mail node (`https://mail.hubmail.space/client/v1`) with a
+Mailbox API key (`hfmb_…`) to read and send mail.
+
+**1. Create a key in the Dashboard.** Scopes are `read`, `organize` and `send`; roles per mailbox are
+`read`, `full` and `owner`. The secret is returned once.
+
+```go
+key, err := client.Mail.MailboxKeys.Create(ctx, projectID, hubfly.CreateMailMailboxKeyParams{
+    Name:         "helpdesk-bot",
+    Scopes:       []string{"read", "organize", "send"},
+    MailboxRoles: map[string]string{supportMailboxID: "full"},
+    IdentityIDs:  []string{supportIdentityID}, // from client.Mail.Identities.List
+})
+// Store key.Data.Secret in your secret manager now.
+```
+
+**2. Read the inbox and 3. send a reply.**
+
+```go
+import "github.com/hubfly/hubfly-sdk/go/mailbox"
+
+mb := mailbox.NewClient(os.Getenv("HUBFLY_MAILBOX_KEY"))
+
+page, err := mb.ListThreads(ctx, mailbox.ListQuery{MailboxID: supportMailboxID, Unread: true, Limit: 25})
+thread, err := mb.Thread(ctx, page.Threads[0].ID) // messages with sanitised bodies, notes, presence
+last := thread.Messages[len(thread.Messages)-1]
+
+upload, err := mb.Upload(ctx, bytes.NewReader(pdf), "invoice.pdf", "application/pdf")
+sent, err := mb.Send(ctx, mailbox.Compose{
+    MailboxID:        thread.MailboxID,
+    From:             "support@acme.com", // one of Me().Identities
+    To:               []mailbox.Address{last.From},
+    Subject:          "Re: " + thread.Subject,
+    Text:             "Thanks, the invoice is attached.",
+    ReplyToMessageID: last.ID,
+    Attachments:      []mailbox.AttachmentRef{mailbox.UploadRef(upload.ID)},
+}, &mailbox.SendOptions{UndoSeconds: 10, IdempotencyKey: "reply-" + last.ID}) // or SendAt: time.Time
+// Within 10 s: mb.CancelSend(ctx, sent.Message.ID)
+_, err = mb.UpdateThreads(ctx, mailbox.Patch{IDs: []string{thread.ID}, Seen: mailbox.Bool(true), MoveTo: "archive"})
+```
+
+**4. Page through everything.** `IterateThreads` and `IterateMessages` follow `NextCursor`.
+
+```go
+it := mb.IterateThreads(mailbox.ListQuery{Folder: "anywhere", Q: "from:bob has:attachment"})
+for it.Next(ctx) {
+    fmt.Println(it.Value().LastAt, it.Value().Subject)
+}
+if err := it.Err(); err != nil {
+    log.Fatal(err)
+}
+```
+
+**5. Handle `storage_full`.** Errors are `*mailbox.APIError` (`StatusCode`, `Code`, `Message`). When
+the pool or a mailbox cap is full, drafts and sends fail with 507 `storage_full`; deleting messages
+and emptying Trash or Spam always works.
+
+```go
+var apiErr *mailbox.APIError
+switch {
+case errors.As(err, &apiErr) && apiErr.Code == mailbox.ErrCodeStorageFull:
+    log.Printf("%s full: %d of %d bytes", apiErr.Scope, apiErr.UsedBytes, apiErr.LimitBytes) // Scope: pool | mailbox
+    usage, _ := mb.Storage(ctx, apiErr.MailboxID) // usage.Largest: the 30 biggest messages
+    // Move some to Trash and EmptyFolder it, or raise the cap/buy storage in the Dashboard.
+    _ = usage
+case mailbox.IsErrorCode(err, mailbox.ErrCodeRateLimited):
+    time.Sleep(apiErr.RetryAfter)
+}
+```
+
+Other codes: `send_limit_reached` (429), `attachment_too_large` (413), `sender_not_ready` (409),
+`too_late` (409, cancel after dispatch). `RawMessage` and `Attachment` return a `*mailbox.File`.
+
 ---
 
 ## License
