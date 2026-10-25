@@ -145,6 +145,9 @@ type Client struct {
 	// Managed holds the Managed Services (databases and realtime servers):
 	// Managed.Instances, Managed.Databases and Managed.Realtime.
 	Managed *ManagedService
+	// Mail administers HubFly Mail mailboxes: Mail.Mailboxes, Mail.People,
+	// Mail.Identities and Mail.MailboxKeys. Read mail with the mailbox package.
+	Mail *MailService
 }
 
 // NewClient initializes a new Hubfly API Client
@@ -192,6 +195,7 @@ func NewClient(opts ...Option) *Client {
 	c.Marketplace = &MarketplaceService{client: c}
 	c.Courses = &CoursesService{client: c}
 	c.Managed = newManagedService(c)
+	c.Mail = newMailService(c)
 
 	return c
 }
