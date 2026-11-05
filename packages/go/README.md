@@ -124,7 +124,7 @@ size := catalog.Data.Realtime.Sizes[0]
 created, err := client.Managed.Instances.Create(ctx, projectID, hubfly.CreateManagedInstanceBody{
     Name:              "chat",
     Service:           "realtime",
-    Size:              hubfly.ManagedInstanceSizeInput{CPU: size.CPU, MemoryMib: size.MemoryMib},
+    Size:              &hubfly.ManagedInstanceSizeInput{CPU: size.CPU, MemoryMib: size.MemoryMib},
     QuotedHourlyTotal: size.Price.Hourly.Total, // 409 MANAGED_PRICE_CHANGED if it moved
     IdempotencyKey:    "create-chat-1",        // reuse it when retrying
     InitialApp:        &hubfly.ManagedRealtimeInitialAppInput{Name: "production"},
@@ -264,6 +264,59 @@ case mailbox.IsErrorCode(err, mailbox.ErrCodeRateLimited):
 
 Other codes: `send_limit_reached` (429), `attachment_too_large` (413), `sender_not_ready` (409),
 `too_late` (409, cancel after dispatch). `RawMessage` and `Attachment` return a `*mailbox.File`.
+
+### 6. Web Analytics
+
+`client.Analytics` manages cookieless Web Analytics: sites, reports, exports, usage, goals, funnels,
+segments, shared dashboard links and ingest keys. Browsers send events with the `@hubfly/analytics`
+tracker or the snippet each site returns. Reading needs `project:read`; changes need
+`project:edit`, sites on HubFly domains also `network:manage`, the event cap `billing:manage`.
+
+```go
+site, err := client.Analytics.Sites.Create(ctx, projectID, hubfly.CreateProjectAnalyticsSiteBody{
+    Source:        "external",
+    Domain:        "example.com",
+    RetentionDays: hubfly.Float(90),
+})
+switch {
+case hubfly.IsAPIErrorCode(err, hubfly.ErrCodeAnalyticsDomainUnverified):
+    check, _ := client.Analytics.VerifyDomain(ctx, projectID, "example.com")
+    fmt.Println("add TXT", *check.Data.TxtHost, *check.Data.TxtValue)
+case err != nil:
+    log.Fatal(err)
+default:
+    fmt.Println(site.Data.Install.Snippet)
+}
+```
+
+`Sites.Query` runs every report type. The response merges the variants; read `Results` with the
+typed accessor of the type you asked for (`AggregateResults`, `TimeseriesResults`,
+`BreakdownResults`, `GoalsResults`, `VitalsResults`, `ErrorsResults`, `PropsResults`); realtime,
+funnel and journeys fields are plain fields.
+
+```go
+resp, err := client.Analytics.Sites.Query(ctx, projectID, siteID, hubfly.AnalyticsQuery{
+    Type:    "breakdown",
+    Dim:     "page",
+    Limit:   hubfly.Float(10),
+    Range:   &hubfly.AnalyticsRangeInput{Period: "30d"},
+    Filters: []hubfly.AnalyticsFilterInput{{Dim: "country", Op: "is", Values: []string{"DE"}}},
+})
+if err != nil {
+    log.Fatal(err)
+}
+rows, err := resp.Data.BreakdownResults()
+for _, row := range rows {
+    fmt.Println(row.Value, row.Values["visitors"])
+}
+
+live, _ := client.Analytics.Sites.Realtime(ctx, projectID, siteID)
+fmt.Println(live.Data.Visitors, "visitors right now")
+```
+
+`Keys.Create` returns an ingest key (`hfak_…`) once; `Shares.Create` a shared dashboard link;
+`Sites.Export` CSV or NDJSON up to 8 MB per call. `client.Analytics.Shared` reads shared dashboards
+by slug without signing in. The types are generated with `make generate-managed`.
 
 ---
 
