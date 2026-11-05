@@ -14,6 +14,8 @@ export {
   VolumesSubModule,
   WebhooksSubModule,
   HibernationSubModule,
+  ProjectTransfersSubModule,
+  transferBundleConfirmText,
 } from './modules/projects.js';
 export { OrganizationsModule } from './modules/organizations.js';
 export { DomainsModule } from './modules/domains.js';
@@ -112,6 +114,7 @@ export { ManagedModule, ManagedInstancesSubModule, ManagedDatabasesSubModule } f
 export type { WaitForOperationOptions } from './modules/managed.js';
 export { ManagedRealtimeSubModule } from './modules/managed-realtime.js';
 export type { ManagedRealtimePublishInput, ManagedRealtimeSendInput } from './modules/managed-realtime.js';
+export { ManagedStreamsSubModule } from './modules/managed-streams.js';
 export {
   ManagedErrorCodes,
   isManagedApiError,
@@ -133,3 +136,23 @@ export type {
   InspectorWebSocket,
   InspectorWebSocketFactory,
 } from './modules/managed-inspector.js';
+export {
+  AnalyticsModule,
+  AnalyticsSitesSubModule,
+  AnalyticsGoalsSubModule,
+  AnalyticsFunnelsSubModule,
+  AnalyticsSegmentsSubModule,
+  AnalyticsSharesSubModule,
+  AnalyticsKeysSubModule,
+  AnalyticsSharedSubModule,
+  AnalyticsErrorCodes,
+} from './modules/analytics.js';
+export type { AnalyticsErrorCode, AnalyticsQueryType, AnalyticsResultOf } from './modules/analytics.js';
+export * from './modules/analytics-types.js';
+
+export {
+  ProjectMigrationsSubModule,
+  MigrationBatchesModule,
+  ProjectMovesModule,
+  migrationBatchConfirmText,
+} from './modules/migrations.js';
