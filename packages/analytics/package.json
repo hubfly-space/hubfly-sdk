@@ -1,0 +1,123 @@
+{
+  "name": "@hubfly/analytics",
+  "version": "1.0.0",
+  "description": "Cookieless web analytics for HubFly: the browser tracker, framework components and server-side events.",
+  "homepage": "https://github.com/hubfly-space/hubfly-sdk/tree/main/packages/analytics#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hubfly-space/hubfly-sdk.git",
+    "directory": "packages/analytics"
+  },
+  "bugs": {
+    "url": "https://github.com/hubfly-space/hubfly-sdk/issues"
+  },
+  "author": "Hubfly Cloud Platform",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.js"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
+    },
+    "./next": {
+      "import": {
+        "types": "./dist/next.d.ts",
+        "default": "./dist/next.js"
+      },
+      "require": {
+        "types": "./dist/next.d.cts",
+        "default": "./dist/next.cjs"
+      }
+    },
+    "./vue": {
+      "import": {
+        "types": "./dist/vue.d.ts",
+        "default": "./dist/vue.js"
+      },
+      "require": {
+        "types": "./dist/vue.d.cts",
+        "default": "./dist/vue.cjs"
+      }
+    },
+    "./svelte": {
+      "import": {
+        "types": "./dist/svelte.d.ts",
+        "default": "./dist/svelte.js"
+      },
+      "require": {
+        "types": "./dist/svelte.d.cts",
+        "default": "./dist/svelte.cjs"
+      }
+    },
+    "./server": {
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      }
+    },
+    "./tracker/core.js": "./dist/tracker/core.js",
+    "./tracker/vitals.js": "./dist/tracker/vitals.js",
+    "./tracker/errors.js": "./dist/tracker/errors.js",
+    "./tracker/manifest.json": "./dist/tracker/manifest.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "hubfly",
+    "analytics",
+    "web-analytics",
+    "cookieless",
+    "privacy",
+    "web-vitals"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsup && bun run build:tracker",
+    "build:tracker": "bun scripts/build-tracker.ts",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=16.8"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.3",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  }
+}
