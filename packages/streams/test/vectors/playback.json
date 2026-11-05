@@ -1,0 +1,398 @@
+{
+  "description": "docs/PLAYBACK.md playback tokens. Verify every case at `now` against `keys`. Cases with signing_vector=true also check signing: serialize the header exactly as given and the claims in the order ch, exp, iat, nbf, sub, ip (absent ones omitted), no whitespace.",
+  "now": 1767225600,
+  "keys": [
+    {
+      "id": "spk_key00001",
+      "secret": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      "status": "active"
+    },
+    {
+      "id": "spk_key00002",
+      "secret": "ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8",
+      "status": "retiring"
+    }
+  ],
+  "claim_order": [
+    "ch",
+    "exp",
+    "iat",
+    "nbf",
+    "sub",
+    "ip"
+  ],
+  "cases": [
+    {
+      "name": "valid for one channel",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMH0.6MnRZ50ELAPsALzXGycxXQdxPfYX-F_n15IotO-ZF3Y",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": true,
+      "signing_vector": true
+    },
+    {
+      "name": "valid with every optional claim",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200,
+        "iat": 1767225600,
+        "nbf": 1767225590,
+        "sub": "viewer-42",
+        "ip": "198.51.100.0/24"
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMCwiaWF0IjoxNzY3MjI1NjAwLCJuYmYiOjE3NjcyMjU1OTAsInN1YiI6InZpZXdlci00MiIsImlwIjoiMTk4LjUxLjEwMC4wLzI0In0.EDv2nluR3HR1BNTHA8V0fLPBRNLD7y18z2HFHpwLdBg",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": true,
+      "signing_vector": true
+    },
+    {
+      "name": "wildcard channel",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "*",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6IioiLCJleHAiOjE3NjcyMjkyMDB9.UBp10MHhZvwj4H1t3woFi0nyBdVgsc56garZRcH8Zvg",
+      "channel": "sch_other001",
+      "client_ip": "198.51.100.20",
+      "valid": true,
+      "signing_vector": true
+    },
+    {
+      "name": "retiring key still valid",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00002"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMiJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMH0.R-0_edMkbEmrc8ctTvZWVkxuoBAoqDZqpFpNduaTqdE",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": true,
+      "signing_vector": true
+    },
+    {
+      "name": "expired 29 s ago is inside the 30 s leeway",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767225571
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyNTU3MX0.VNDKR4QUiqQ7I1XF1GjYPiA8KHRr3bmFpJRiLQmAUsk",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": true,
+      "signing_vector": true
+    },
+    {
+      "name": "expired 31 s ago",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767225569
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyNTU2OX0.4HiuvZbssD_wP3gA9vVFQseTxBK5Xcesyrw4GFs2018",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": true
+    },
+    {
+      "name": "nbf 29 s ahead is inside the leeway",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200,
+        "nbf": 1767225629
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMCwibmJmIjoxNzY3MjI1NjI5fQ.0-8XRqTuiRXmqJyeLH0I5cEqMgG_-IVrcL6gMClLVpw",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": true,
+      "signing_vector": true
+    },
+    {
+      "name": "nbf 60 s ahead",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200,
+        "nbf": 1767225660
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMCwibmJmIjoxNzY3MjI1NjYwfQ.sbsyiMveGYO6TxYqknS-fS8F6xgUh-651lvq3SSzBwY",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": true
+    },
+    {
+      "name": "exp more than 31 days ahead",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1769990400
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2OTk5MDQwMH0.wzY9lvpbPDWbjQ0GnD_8ZpXOc-P6UfNTV42LXs6wLag",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": true
+    },
+    {
+      "name": "exp exactly 31 days ahead",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1769904000
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2OTkwNDAwMH0.VVzELEjQjCfPcnwoQv5ryZtUHlf7fyr6cBUYoDkloDk",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": true,
+      "signing_vector": true
+    },
+    {
+      "name": "other channel",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMH0.6MnRZ50ELAPsALzXGycxXQdxPfYX-F_n15IotO-ZF3Y",
+      "channel": "sch_other001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": true
+    },
+    {
+      "name": "missing ch",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJleHAiOjE3NjcyMjkyMDB9.WfSKgKI_2dkGDEjbzBO6uaPTIZs3Y8kwj-ARklzhawI",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": true
+    },
+    {
+      "name": "missing exp",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001"
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSJ9.NBCcLDv60vDxvOGViV17i4xaCZ8EsBUeXn4fO2wYzR0",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": true
+    },
+    {
+      "name": "tampered signature",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMH0.6cnRZ50ELAPsALzXGycxXQdxPfYX-F_n15IotO-ZF3Y",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": false
+    },
+    {
+      "name": "signed with the other key's secret",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMH0.tg19xhAoEzvKkdvmuw33PRqzrpHNFDilPci-Gx1lhlo",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": false
+    },
+    {
+      "name": "unknown kid",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_unknown1"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa191bmtub3duMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMH0.y7weHAwX0YixIvVC4yD2QorkiSuzo3ctqZyDsrdVslQ",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": false
+    },
+    {
+      "name": "missing kid",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMH0.tGFdr8TbALDEnvuN4UkXlnXZXl6-GmaYvKkIJNeVrgI",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": false
+    },
+    {
+      "name": "alg HS512 refused",
+      "header": {
+        "alg": "HS512",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMH0.f-wx3u3n-dsVfbgQww589tRWO5jKh_IM48MH2iFgkWY",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": false
+    },
+    {
+      "name": "ip claim mismatch",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200,
+        "ip": "203.0.113.0/24"
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMCwiaXAiOiIyMDMuMC4xMTMuMC8yNCJ9.N331BF-xsTBcXGGU9lX8Y1BxD46Zdm1DT0vUedNWV74",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": true
+    },
+    {
+      "name": "ip claim exact address",
+      "header": {
+        "alg": "HS256",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200,
+        "ip": "198.51.100.20"
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InNwa19rZXkwMDAwMSJ9.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMCwiaXAiOiIxOTguNTEuMTAwLjIwIn0.j3wb_iJnY9-buJta1CaPrqlIjyIA6wDd2W-0516ty7I",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": true,
+      "signing_vector": true
+    },
+    {
+      "name": "alg none refused",
+      "header": {
+        "alg": "none",
+        "typ": "JWT",
+        "kid": "spk_key00001"
+      },
+      "claims": {
+        "ch": "sch_main0001",
+        "exp": 1767229200
+      },
+      "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIiwia2lkIjoic3BrX2tleTAwMDAxIn0.eyJjaCI6InNjaF9tYWluMDAwMSIsImV4cCI6MTc2NzIyOTIwMH0.",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": false
+    },
+    {
+      "name": "garbage",
+      "header": null,
+      "claims": null,
+      "token": "not.a.token",
+      "channel": "sch_main0001",
+      "client_ip": "198.51.100.20",
+      "valid": false,
+      "signing_vector": false
+    }
+  ]
+}
