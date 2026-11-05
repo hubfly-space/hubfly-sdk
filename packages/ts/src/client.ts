@@ -21,6 +21,8 @@ import { SubaccountsModule } from './modules/subaccounts.js';
 import { PlatformKeysModule } from './modules/platform-keys.js';
 import { ManagedModule } from './modules/managed.js';
 import { MailModule } from './modules/mail.js';
+import { AnalyticsModule } from './modules/analytics.js';
+import { MigrationBatchesModule, ProjectMovesModule } from './modules/migrations.js';
 
 /**
  * Custom Error thrown when Hubfly API returns an error response
@@ -71,6 +73,8 @@ export class HubflyClient {
   // Module Instances
   public readonly auth: AuthModule;
   public readonly projects: ProjectsModule;
+  public readonly migrationBatches: MigrationBatchesModule;
+  public readonly projectMoves: ProjectMovesModule;
   public readonly organizations: OrganizationsModule;
   public readonly domains: DomainsModule;
   public readonly gpu: GpuModule;
@@ -88,6 +92,8 @@ export class HubflyClient {
   public readonly managed: ManagedModule;
   /** HubFly Mail mailbox administration (mailboxes, people, identities, keys). */
   public readonly mail: MailModule;
+  /** Web Analytics: sites, reports, goals, funnels, segments, shared dashboards and ingest keys. */
+  public readonly analytics: AnalyticsModule;
 
   constructor(options: HubflyClientOptions = {}) {
     this.baseUrl = (options.baseUrl || 'https://api.hubfly.space').replace(/\/$/, '');
@@ -103,6 +109,8 @@ export class HubflyClient {
     // Instantiate Modules
     this.auth = new AuthModule(this);
     this.projects = new ProjectsModule(this);
+    this.migrationBatches = new MigrationBatchesModule(this);
+    this.projectMoves = new ProjectMovesModule(this);
     this.organizations = new OrganizationsModule(this);
     this.domains = new DomainsModule(this);
     this.gpu = new GpuModule(this);
@@ -118,6 +126,7 @@ export class HubflyClient {
     this.platformKeys = new PlatformKeysModule(this);
     this.managed = new ManagedModule(this);
     this.mail = new MailModule(this);
+    this.analytics = new AnalyticsModule(this);
   }
 
   /**
