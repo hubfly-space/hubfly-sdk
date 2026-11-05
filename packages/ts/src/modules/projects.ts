@@ -1,4 +1,5 @@
 import type { HubflyClient } from "../client.js";
+import { ProjectMigrationsSubModule } from "./migrations.js";
 import type {
   ApiResponse,
   Project,
@@ -44,6 +45,20 @@ import type {
   CreateWebhookParams,
   HibernationStatus,
   HibernationPreview,
+  ProjectTransferView,
+  ProjectTransferPreview,
+  ProjectTransferOtp,
+  ProjectTransferList,
+  ProjectTransferOfferView,
+  ProjectTransferAcceptancePreview,
+  ProjectTransferBundle,
+  ProjectTransferDestinationParams,
+  AcceptProjectTransferParams,
+  CreateProjectTransferOtpParams,
+  CreateProjectTransferParams,
+  CreateProjectTransferBundleOtpParams,
+  CreateProjectTransferBundleParams,
+  ProjectHistoryEntry,
 } from "../types.js";
 
 export class ContainersSubModule {
@@ -738,6 +753,153 @@ export class HibernationSubModule {
   }
 }
 
+/** The confirmation text a bundle transfer needs: `TRANSFER <n> PROJECTS`. */
+export function transferBundleConfirmText(projectCount: number): string {
+  return `TRANSFER ${projectCount} PROJECTS`;
+}
+
+/**
+ * Project transfers: give a project to another HubFly account or an
+ * organization. The sender previews, gets an emailed code and creates the
+ * offer; the recipient opens the emailed token, previews a destination and
+ * accepts. The owner changes at the next full hour.
+ *
+ * Writes (`createOtp`, `create`, `cancel`, `accept`, `decline` and the bundle
+ * calls) need a signed-in dashboard session: API keys and access tokens get
+ * `403 MOVE_SESSION_REQUIRED`. Reads accept tokens.
+ */
+export class ProjectTransfersSubModule {
+  constructor(private readonly client: HubflyClient) {}
+
+  /** The project's open transfer, or its latest one; null when it never had one. */
+  public async get(
+    projectId: string,
+  ): Promise<ApiResponse<ProjectTransferView | null>> {
+    return this.client.request<ProjectTransferView | null>(
+      `/api/v1/projects/${projectId}/transfer`,
+    );
+  }
+
+  /** What a transfer would move and revoke, and what blocks it (sender only). */
+  public async preview(
+    projectId: string,
+  ): Promise<ApiResponse<ProjectTransferPreview>> {
+    return this.client.request<ProjectTransferPreview>(
+      `/api/v1/projects/${projectId}/transfer/preview`,
+    );
+  }
+
+  /** Emails the sender a confirmation code bound to this project and recipient. */
+  public async createOtp(
+    projectId: string,
+    params: CreateProjectTransferOtpParams,
+  ): Promise<ApiResponse<ProjectTransferOtp>> {
+    return this.client.request<ProjectTransferOtp>(
+      `/api/v1/projects/${projectId}/transfer/otp/create`,
+      { method: "POST", body: params },
+    );
+  }
+
+  /**
+   * Offers the project to an email address. The response is the same whether
+   * or not the address has a HubFly account.
+   */
+  public async create(
+    projectId: string,
+    params: CreateProjectTransferParams,
+  ): Promise<ApiResponse<ProjectTransferView>> {
+    return this.client.request<ProjectTransferView>(
+      `/api/v1/projects/${projectId}/transfer/create`,
+      { method: "POST", body: params },
+    );
+  }
+
+  /**
+   * Cancels the open offer, or an accepted transfer whose owner change has
+   * not started. An accepted transfer may still read `accepted` while its job
+   * rolls back; poll `get`.
+   */
+  public async cancel(
+    projectId: string,
+  ): Promise<ApiResponse<ProjectTransferView>> {
+    return this.client.request<ProjectTransferView>(
+      `/api/v1/projects/${projectId}/transfer/cancel`,
+      { method: "POST", body: {} },
+    );
+  }
+
+  /** Offers waiting for you (without tokens) and transfers you started. */
+  public async list(): Promise<ApiResponse<ProjectTransferList>> {
+    return this.client.request<ProjectTransferList>("/api/v1/project-transfers");
+  }
+
+  /**
+   * The offer behind an emailed token. Unknown tokens, offers for another
+   * email address and closed offers all answer `404 TRANSFER_NOT_FOUND`.
+   */
+  public async getOffer(
+    token: string,
+  ): Promise<ApiResponse<ProjectTransferOfferView>> {
+    return this.client.request<ProjectTransferOfferView>(
+      `/api/v1/project-transfers/${encodeURIComponent(token)}`,
+    );
+  }
+
+  /** What accepting into a destination costs and requires (recipient only). */
+  public async previewAcceptance(
+    token: string,
+    params: ProjectTransferDestinationParams,
+  ): Promise<ApiResponse<ProjectTransferAcceptancePreview>> {
+    const search = new URLSearchParams({ destinationType: params.destinationType });
+    if (params.destinationId) search.set("destinationId", params.destinationId);
+    for (const id of params.transferIds ?? []) search.append("transferIds", id);
+    return this.client.request<ProjectTransferAcceptancePreview>(
+      `/api/v1/project-transfers/${encodeURIComponent(token)}/preview?${search}`,
+    );
+  }
+
+  /** Accepts the offer (or part of a bundle) into your account or an organization. */
+  public async accept(
+    token: string,
+    params: AcceptProjectTransferParams,
+  ): Promise<ApiResponse<ProjectTransferView[]>> {
+    return this.client.request<ProjectTransferView[]>(
+      `/api/v1/project-transfers/${encodeURIComponent(token)}/accept`,
+      { method: "POST", body: params },
+    );
+  }
+
+  /** Declines every open project of the offer. */
+  public async decline(
+    token: string,
+  ): Promise<ApiResponse<{ declined: true }>> {
+    return this.client.request<{ declined: true }>(
+      `/api/v1/project-transfers/${encodeURIComponent(token)}/decline`,
+      { method: "POST", body: {} },
+    );
+  }
+
+  /** Emails the sender a code bound to these projects and recipient. */
+  public async createBundleOtp(
+    params: CreateProjectTransferBundleOtpParams,
+  ): Promise<ApiResponse<ProjectTransferOtp>> {
+    return this.client.request<ProjectTransferOtp>(
+      "/api/v1/project-transfers/bundles/otp/create",
+      { method: "POST", body: params },
+    );
+  }
+
+  /** Offers several projects to one address with a single token. */
+  public async createBundle(
+    params: CreateProjectTransferBundleParams,
+  ): Promise<ApiResponse<ProjectTransferBundle>> {
+    return this.client.request<ProjectTransferBundle>(
+      "/api/v1/project-transfers/bundles/create",
+      { method: "POST", body: params },
+    );
+  }
+}
+
 export class ProjectsModule {
   public readonly containers: ContainersSubModule;
   public readonly loadBalancers: LoadBalancersSubModule;
@@ -750,6 +912,9 @@ export class ProjectsModule {
   public readonly volumes: VolumesSubModule;
   public readonly webhooks: WebhooksSubModule;
   public readonly hibernation: HibernationSubModule;
+  /** Give a project to another account or organization. */
+  public readonly migration: ProjectMigrationsSubModule;
+ public readonly transfers: ProjectTransfersSubModule;
 
   constructor(private readonly client: HubflyClient) {
     this.containers = new ContainersSubModule(client);
@@ -763,6 +928,8 @@ export class ProjectsModule {
     this.volumes = new VolumesSubModule(client);
     this.webhooks = new WebhooksSubModule(client);
     this.hibernation = new HibernationSubModule(client);
+    this.transfers = new ProjectTransfersSubModule(client);
+    this.migration = new ProjectMigrationsSubModule(client);
   }
 
   /**
@@ -802,6 +969,17 @@ export class ProjectsModule {
       {
         method: "DELETE",
       },
+    );
+  }
+
+  /**
+   * Transfers and region moves of a project, newest first
+   */
+  public async history(
+    projectId: string,
+  ): Promise<ApiResponse<{ entries: ProjectHistoryEntry[] }>> {
+    return this.client.request<{ entries: ProjectHistoryEntry[] }>(
+      `/api/v1/projects/${projectId}/history`,
     );
   }
 
