@@ -10,6 +10,7 @@ import {
   toSocketId,
 } from '../src/index.js';
 import type { ManagedOperationId } from '../src/index.js';
+import { streamCalls } from './managed-streams-calls.js';
 
 interface Recorded {
   method: string;
@@ -153,6 +154,7 @@ function calls(client: HubflyClient): Array<[ManagedOperationId, () => Promise<u
     ['createManagedRealtimeBinding', () => rt.createBinding(P, I, { appId: A, targetProjectId: 'proj_2', clientPrefix: 'NEXT_PUBLIC_' })],
     ['deleteManagedRealtimeBinding', () => rt.deleteBinding(P, I, 'bind_1', { removeVariables: false })],
     ['getManagedRealtimeConnection', () => rt.getConnection(P, I)],
+    ...streamCalls(client),
   ];
 }
 
