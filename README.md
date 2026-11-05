@@ -12,6 +12,9 @@ Official client SDK monorepo for the **Hubfly Cloud Platform API** (`https://api
 | **Go** | [`packages/go`](packages/go) | `github.com/hubfly/hubfly-sdk/go` | Production Ready |
 | **HubFly Realtime (TypeScript)**: client, server, E2E | [`packages/realtime`](packages/realtime) | `@hubfly/realtime` (`/server`, `/e2e`) | Preview |
 | **HubFly Realtime (Go)**: server | [`packages/go/realtime`](packages/go/realtime) | `github.com/hubfly/hubfly-sdk/go/realtime` (nested module) | Preview |
+| **HubFly Web Analytics**: browser tracker and events API | [`packages/analytics`](packages/analytics) | `@hubfly/analytics` | Preview |
+| **HubFly Streams (TypeScript)**: player, WHIP publishing, tokens, webhooks | [`packages/streams`](packages/streams) | `@hubfly/streams` (`/player`, `/publish`, `/server`) | Preview |
+| **HubFly Streams (Go)**: playback tokens, webhooks | [`packages/go/streams`](packages/go/streams) | `github.com/hubfly/hubfly-sdk/go/streams` (nested module) | Preview |
 
 ---
 
@@ -90,6 +93,24 @@ rt.subscribe('private-orders').bind('order.created', (order) => render(order));
 await RealtimeServer.fromEnv().channel('private-orders').publish('order.created', { id: 42 });
 ```
 
+### HubFly Streams
+Live video and audio: a player that picks WebRTC, LL-HLS or HLS, browser publishing over WHIP, and
+playback tokens and webhook verification for your backend. See [`packages/streams`](packages/streams/README.md)
+and [`packages/go/streams`](packages/go/streams/README.md).
+
+```html
+<script type="module">import '@hubfly/streams/player';</script>
+<hubfly-player host="acme-tv.live.hubfly.app" channel="sch_main0001" autoplay muted></hubfly-player>
+```
+
+```typescript
+import { signPlaybackToken } from '@hubfly/streams/server';   // your backend
+const token = await signPlaybackToken({ id: keyId, secret: keySecret }, { ch: 'sch_main0001' }, { ttlSeconds: 3600 });
+```
+
+Stream servers, inputs, channels, destinations, schedules and keys are managed through
+`hubfly.managed.streams` (TypeScript) and `client.Managed.Streams` (Go).
+
 ### Managed Services (Databases + Realtime) through the Dashboard API
 `@hubfly/sdk` (`hubfly.managed`) and the Go SDK (`client.Managed`) manage databases and realtime
 servers: lifecycle, operations, metrics, network, alerts, the database-specific endpoints, and every
@@ -106,7 +127,24 @@ console.log(data.counts); // { delivered, buffered, queued, offline }
 
 Their request and response types are generated from the Dashboard's `openapi.json` by
 `scripts/generate-managed.ts` (TypeScript `packages/ts/src/modules/managed-types.ts`, Go
-`packages/go/managed_types.go`; do not edit them by hand).
+`packages/go/managed_types.go`; do not edit them by hand). The same script generates the Web Analytics
+types (`analytics-types.ts`, `analytics_types.go`).
+
+### Web Analytics through the Dashboard API
+`@hubfly/sdk` (`hubfly.analytics`) and the Go SDK (`client.Analytics`) manage Web Analytics: sites
+(external websites or domains served on HubFly), install snippets, reports (aggregate, timeseries,
+breakdown, realtime, goals, funnels, journeys, Web Vitals, errors, props), exports, usage and the event
+cap, goals, funnels, segments, shared dashboard links and ingest keys. Browsers send events with the
+[`@hubfly/analytics`](packages/analytics) tracker. See
+[`packages/ts`](packages/ts/README.md#7-web-analytics) and
+[`packages/go`](packages/go/README.md#6-web-analytics).
+
+```typescript
+const { data } = await hubfly.analytics.sites.query(projectId, siteId, {
+  type: 'breakdown', dim: 'page', range: { period: '30d' }, metrics: ['visitors', 'pageviews'],
+});
+for (const row of data.results) console.log(row.value, row.values.visitors);
+```
 
 ### Mailboxes (HubFly Mail)
 `hubfly.mail` / `client.Mail` administer mailboxes, people, sender identities, branding, storage and
@@ -141,10 +179,12 @@ make build-go
 # HubFly Realtime: build/test @hubfly/realtime, test the Go realtime module
 make build-realtime test-realtime test-go-realtime
 
-# Managed Services: regenerate types from ../hubfly-dashboard/openapi.json (or OPENAPI_PATH),
-# then check that every managed operation has a TS and Go method and the types are in sync
+# Managed Services and Web Analytics: regenerate types from ../hubfly-dashboard/openapi.json
+# (or OPENAPI_PATH), then check that every operation has a TS and Go method and the types are in sync.
+# A spec without analytics routes leaves the analytics types as they are.
 make generate-managed
 make verify-spec-managed
+make verify-spec-analytics
 ```
 
 ---
