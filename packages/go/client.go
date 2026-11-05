@@ -111,9 +111,9 @@ func WithTimeout(timeout time.Duration) Option {
 
 // Client is the primary Hubfly API Client
 type Client struct {
-	baseURL    string
-	token      string
-	httpClient *http.Client
+	baseURL      string
+	token        string
+	httpClient   *http.Client
 	subaccountID string
 
 	// Services
@@ -142,12 +142,20 @@ type Client struct {
 	Github        *GithubService
 	Marketplace   *MarketplaceService
 	Courses       *CoursesService
+	// ProjectTransfers gives projects to another account or organization.
+	ProjectTransfers  *ProjectTransfersService
+	ProjectMigrations *ProjectMigrationsService
+	MigrationBatches  *MigrationBatchesService
+	ProjectMoves      *ProjectMovesService
 	// Managed holds the Managed Services (databases and realtime servers):
 	// Managed.Instances, Managed.Databases and Managed.Realtime.
 	Managed *ManagedService
 	// Mail administers HubFly Mail mailboxes: Mail.Mailboxes, Mail.People,
 	// Mail.Identities and Mail.MailboxKeys. Read mail with the mailbox package.
 	Mail *MailService
+	// Analytics manages Web Analytics: Analytics.Sites (reports and exports),
+	// Analytics.Goals, Funnels, Segments, Shares, Keys and Analytics.Shared.
+	Analytics *AnalyticsService
 }
 
 // NewClient initializes a new Hubfly API Client
@@ -190,12 +198,17 @@ func NewClient(opts ...Option) *Client {
 	c.Volumes = &VolumesService{client: c}
 	c.Webhooks = &WebhooksService{client: c}
 	c.Hibernation = &HibernationService{client: c}
+	c.ProjectTransfers = &ProjectTransfersService{client: c}
+	c.ProjectMigrations = &ProjectMigrationsService{client: c}
+	c.MigrationBatches = &MigrationBatchesService{client: c}
+	c.ProjectMoves = &ProjectMovesService{client: c}
 	c.Cli = &CliService{client: c}
 	c.Github = &GithubService{client: c}
 	c.Marketplace = &MarketplaceService{client: c}
 	c.Courses = &CoursesService{client: c}
 	c.Managed = newManagedService(c)
 	c.Mail = newMailService(c)
+	c.Analytics = newAnalyticsService(c)
 
 	return c
 }
