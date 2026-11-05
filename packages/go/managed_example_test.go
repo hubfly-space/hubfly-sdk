@@ -23,7 +23,7 @@ func ExampleManagedRealtimeService() {
 	created, err := client.Managed.Instances.Create(ctx, projectID, hubfly.CreateManagedInstanceBody{
 		Name:              "chat",
 		Service:           "realtime",
-		Size:              hubfly.ManagedInstanceSizeInput{CPU: size.CPU, MemoryMib: size.MemoryMib},
+		Size:              &hubfly.ManagedInstanceSizeInput{CPU: size.CPU, MemoryMib: size.MemoryMib},
 		QuotedHourlyTotal: size.Price.Hourly.Total,
 		IdempotencyKey:    "create-chat-1",
 		InitialApp:        &hubfly.ManagedRealtimeInitialAppInput{Name: "production"},
@@ -55,5 +55,46 @@ func ExampleManagedRealtimeService() {
 	})
 	if hubfly.IsAPIErrorCode(err, hubfly.ErrCodeManagedRealtimeEngineUnsupported) {
 		fmt.Println("this server's engine version does not have history yet")
+	}
+}
+
+// Creates a 100 Mbps stream server with a first input, then mints a test
+// playback token for one channel. Production tokens are signed on your own
+// server with github.com/hubfly/hubfly-sdk/go/streams.
+func ExampleManagedStreamsService() {
+	client := hubfly.NewClient() // HUBFLY_TOKEN
+	ctx := context.Background()
+	projectID := "proj_123"
+	st := client.Managed.Streams
+
+	quote, err := st.EstimatePrice(ctx, hubfly.GetStreamPriceEstimateQuery{SpeedMbps: 100})
+	if err != nil {
+		log.Fatal(err)
+	}
+	created, err := client.Managed.Instances.Create(ctx, projectID, hubfly.CreateManagedInstanceBody{
+		Name:              "acme-tv",
+		Service:           "stream",
+		Stream:            &hubfly.CreateManagedInstanceStreamInput{SpeedMbps: 100, Timezone: "Africa/Kigali", FirstInput: &hubfly.CreateManagedInstanceStreamFirstInputInput{Name: "Studio A"}},
+		QuotedHourlyTotal: quote.Data.Hourly.SpeedMicroUsd / 1e6,
+		IdempotencyKey:    "create-acme-tv-1",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	instanceID := created.Data.Instance.ID
+	// created.Data.Stream.FirstInput.Keys.Primary is the stream key, shown once:
+	// hand it to the encoder, never log it.
+
+	channels, err := st.ListChannels(ctx, projectID, instanceID)
+	if err != nil || len(channels.Data) == 0 {
+		log.Fatal("no channel yet: ", err)
+	}
+	token, err := st.CreatePlaybackToken(ctx, projectID, instanceID, channels.Data[0].ID, hubfly.CreateManagedStreamPlaybackTokenBody{TTLSeconds: 3600})
+	if hubfly.IsAPIErrorCode(err, hubfly.ErrCodeStreamNodeUnavailable) {
+		fmt.Println("the stream node is not answering; retry shortly")
+		return
+	}
+	if err == nil {
+		fmt.Println("token expires at", token.Data.ExpiresAt)
 	}
 }
