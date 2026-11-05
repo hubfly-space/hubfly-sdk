@@ -527,6 +527,276 @@ type HibernationPreview struct {
 }
 
 // ==========================================
+// Project Moves (transfers, region migration, history)
+// ==========================================
+// Shapes of hubfly-dashboard/shared/project-moves.ts. Region migration types
+// join this section.
+
+// ProjectJobStep is one step of a project job.
+type ProjectJobStep struct {
+	Key        string  `json:"key"`
+	Label      string  `json:"label"`
+	Status     string  `json:"status"` // pending | running | succeeded | failed | skipped
+	Phase      string  `json:"phase"`  // forward | compensation
+	StartedAt  *string `json:"startedAt"`
+	FinishedAt *string `json:"finishedAt"`
+}
+
+// ProjectJobView is the long-running job behind a transfer or a region move.
+type ProjectJobView struct {
+	ID string `json:"id"`
+	// Kind is project_transfer, project_migration, migration_reverse or metadata_rehome.
+	Kind string `json:"kind"`
+	// Status is queued, running, waiting, rolling_back, succeeded, failed, canceled or needs_attention.
+	Status string `json:"status"`
+	Phase  string `json:"phase"` // forward | compensation
+	// Lock is "config" (changes paused) or "full" (workloads stopped too); nil when unlocked.
+	Lock            *string          `json:"lock"`
+	Step            *string          `json:"step"`
+	StepLabel       *string          `json:"stepLabel"`
+	StepIndex       int              `json:"stepIndex"`
+	StepCount       int              `json:"stepCount"`
+	Steps           []ProjectJobStep `json:"steps"`
+	Progress        *float64         `json:"progress"`
+	ETASeconds      *int64           `json:"etaSeconds"`
+	ErrorCode       *string          `json:"errorCode"`
+	ErrorMessage    *string          `json:"errorMessage"`
+	RemediationCode *string          `json:"remediationCode"`
+	StartedAt       *string          `json:"startedAt"`
+	FinishedAt      *string          `json:"finishedAt"`
+	NextRunAt       *string          `json:"nextRunAt"`
+}
+
+// OwnerRef is a personal account (Type "user") or an organization.
+type OwnerRef struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// MoveIssue is a blocker, warning or note of a transfer or migration preview.
+type MoveIssue struct {
+	Code     string         `json:"code"`
+	Severity string         `json:"severity"` // blocker | warning | info
+	Message  string         `json:"message"`
+	Detail   map[string]any `json:"detail,omitempty"`
+}
+
+// MoveCount counts one kind of resource that moves or is revoked.
+type MoveCount struct {
+	Kind  string `json:"kind"`
+	Label string `json:"label"`
+	Count int    `json:"count"`
+}
+
+// ProjectTransferView is a transfer of a project to another owner. Status is
+// pending, accepted, declined, canceled, expired, completed or failed.
+type ProjectTransferView struct {
+	ID string `json:"id"`
+	// ProjectID is nil once the project was deleted.
+	ProjectID      *string   `json:"projectId"`
+	ProjectName    string    `json:"projectName"`
+	ProjectType    string    `json:"projectType"`
+	Status         string    `json:"status"`
+	RecipientEmail string    `json:"recipientEmail"`
+	From           OwnerRef  `json:"from"`
+	To             *OwnerRef `json:"to"`
+	ExpiresAt      string    `json:"expiresAt"`
+	CreatedAt      string    `json:"createdAt"`
+	AcceptedAt     *string   `json:"acceptedAt"`
+	CompletedAt    *string   `json:"completedAt"`
+	// HandoverAt is the full hour at which the owner changes.
+	HandoverAt     *string         `json:"handoverAt"`
+	Job            *ProjectJobView `json:"job"`
+	FailureCode    *string         `json:"failureCode"`
+	FailureMessage *string         `json:"failureMessage"`
+}
+
+// ProjectTransferPreview is what a transfer would move and revoke, and what
+// blocks it (sender only).
+type ProjectTransferPreview struct {
+	ProjectID                  string      `json:"projectId"`
+	ProjectName                string      `json:"projectName"`
+	ProjectType                string      `json:"projectType"`
+	CanTransfer                bool        `json:"canTransfer"`
+	Blockers                   []MoveIssue `json:"blockers"`
+	Warnings                   []MoveIssue `json:"warnings"`
+	Moves                      []MoveCount `json:"moves"`
+	RevokedIfSenderLosesAccess []MoveCount `json:"revokedIfSenderLosesAccess"`
+	EnvValueCount              int         `json:"envValueCount"`
+	RequiresOTP                bool        `json:"requiresOtp"`
+}
+
+// ProjectTransferOTP says where the confirmation code was sent.
+type ProjectTransferOTP struct {
+	SentTo    string `json:"sentTo"`
+	ExpiresAt string `json:"expiresAt"`
+}
+
+// ProjectTransferOfferSummary is an offer waiting for you. Its token is only
+// in the offer email.
+type ProjectTransferOfferSummary struct {
+	TransferID  string  `json:"transferId"`
+	BatchID     *string `json:"batchId"`
+	ProjectName string  `json:"projectName"`
+	ProjectType string  `json:"projectType"`
+	SenderName  string  `json:"senderName"`
+	ExpiresAt   string  `json:"expiresAt"`
+	Status      string  `json:"status"`
+}
+
+// ProjectTransferList holds offers for you and transfers you started.
+type ProjectTransferList struct {
+	Incoming []ProjectTransferOfferSummary `json:"incoming"`
+	Outgoing []ProjectTransferView         `json:"outgoing"`
+}
+
+// ProjectTransferOfferMember is a direct member of an offered project; they
+// lose access unless kept with KeepMembers.
+type ProjectTransferOfferMember struct {
+	UserID      string   `json:"userId"`
+	Name        string   `json:"name"`
+	Email       string   `json:"email"`
+	Permissions []string `json:"permissions"`
+	Credentials []string `json:"credentials"`
+}
+
+// ProjectTransferOfferProject is one project of an offer.
+type ProjectTransferOfferProject struct {
+	TransferID  string `json:"transferId"`
+	ProjectName string `json:"projectName"`
+	ProjectType string `json:"projectType"`
+	Hosting     struct {
+		Hostnames     []string `json:"hostnames"`
+		CustomDomains []string `json:"customDomains"`
+		MailDomains   []string `json:"mailDomains"`
+		Buckets       int      `json:"buckets"`
+		Containers    int      `json:"containers"`
+		Volumes       int      `json:"volumes"`
+		Boxes         int      `json:"boxes"`
+	} `json:"hosting"`
+	Members []ProjectTransferOfferMember `json:"members"`
+}
+
+// ProjectTransferDestination is an account the recipient can accept into.
+type ProjectTransferDestination struct {
+	Type     string  `json:"type"` // user | organization
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Eligible bool    `json:"eligible"`
+	Reason   *string `json:"reason"`
+}
+
+// ProjectTransferOfferView is the offer behind an emailed token.
+type ProjectTransferOfferView struct {
+	BatchID      *string                       `json:"batchId"`
+	SenderName   string                        `json:"senderName"`
+	ExpiresAt    string                        `json:"expiresAt"`
+	Status       string                        `json:"status"`
+	Projects     []ProjectTransferOfferProject `json:"projects"`
+	Destinations []ProjectTransferDestination  `json:"destinations"`
+}
+
+// ProjectTransferAcceptancePreview is what accepting into a destination
+// costs and requires (recipient only).
+type ProjectTransferAcceptancePreview struct {
+	Eligible                bool        `json:"eligible"`
+	Blockers                []MoveIssue `json:"blockers"`
+	Warnings                []MoveIssue `json:"warnings"`
+	BalanceMicroUSD         int64       `json:"balanceMicroUsd"`
+	RequiredBalanceMicroUSD int64       `json:"requiredBalanceMicroUsd"`
+	HourlyBurnMicroUSD      int64       `json:"hourlyBurnMicroUsd"`
+	BilledPlans             []struct {
+		Kind           string `json:"kind"`
+		Label          string `json:"label"`
+		AmountMicroUSD int64  `json:"amountMicroUsd"`
+		Period         string `json:"period"`
+	} `json:"billedPlans"`
+	CredentialPolicy string      `json:"credentialPolicy"` // rotate | keep
+	Revoked          []MoveCount `json:"revoked"`
+}
+
+// ProjectTransferOptions tunes a transfer. CredentialPolicy "rotate" revokes
+// every project credential at the handover; "auto" (default) only those of
+// people who lose access.
+type ProjectTransferOptions struct {
+	CredentialPolicy string `json:"credentialPolicy,omitempty"`
+}
+
+// CreateProjectTransferParams offers a project. ConfirmName is the project
+// name, typed to confirm; OTP is the code from ProjectTransfers.CreateOTP.
+type CreateProjectTransferParams struct {
+	RecipientEmail string                  `json:"recipientEmail"`
+	ConfirmName    string                  `json:"confirmName"`
+	OTP            string                  `json:"otp"`
+	Options        *ProjectTransferOptions `json:"options,omitempty"`
+}
+
+// CreateProjectTransferBundleOTPParams asks for a code covering several projects.
+type CreateProjectTransferBundleOTPParams struct {
+	ProjectIDs     []string `json:"projectIds"`
+	RecipientEmail string   `json:"recipientEmail"`
+}
+
+// CreateProjectTransferBundleParams offers several projects with one token.
+// ConfirmText is TransferBundleConfirmText(len(ProjectIDs)).
+type CreateProjectTransferBundleParams struct {
+	ProjectIDs     []string                `json:"projectIds"`
+	RecipientEmail string                  `json:"recipientEmail"`
+	ConfirmText    string                  `json:"confirmText"`
+	OTP            string                  `json:"otp"`
+	Options        *ProjectTransferOptions `json:"options,omitempty"`
+}
+
+// ProjectTransferBundle is a bundle offer.
+type ProjectTransferBundle struct {
+	BatchID   string                `json:"batchId"`
+	Transfers []ProjectTransferView `json:"transfers"`
+}
+
+// ProjectTransferDestinationParams names where to accept: DestinationType
+// "user" (your account) or "organization" with DestinationID. TransferIDs
+// selects part of a bundle; every open project when empty.
+type ProjectTransferDestinationParams struct {
+	DestinationType string   `json:"destinationType"`
+	DestinationID   string   `json:"destinationId,omitempty"`
+	TransferIDs     []string `json:"transferIds,omitempty"`
+}
+
+// ProjectTransferKeepMembers keeps direct members of one offered project.
+type ProjectTransferKeepMembers struct {
+	TransferID string   `json:"transferId"`
+	UserIDs    []string `json:"userIds"`
+}
+
+// AcceptProjectTransferParams accepts an offer. Members not listed in
+// KeepMembers lose their access.
+type AcceptProjectTransferParams struct {
+	DestinationType string                       `json:"destinationType"`
+	DestinationID   string                       `json:"destinationId,omitempty"`
+	TransferIDs     []string                     `json:"transferIds,omitempty"`
+	KeepMembers     []ProjectTransferKeepMembers `json:"keepMembers,omitempty"`
+}
+
+// ProjectHistoryEntry is one transfer or region move of a project. Kind is
+// transfer, migration, reverse, rehome or evacuation.
+type ProjectHistoryEntry struct {
+	ID     string  `json:"id"`
+	Kind   string  `json:"kind"`
+	Status string  `json:"status"`
+	Title  string  `json:"title"`
+	Detail *string `json:"detail"`
+	Actor  *string `json:"actor"`
+	At     string  `json:"at"`
+	Href   *string `json:"href"`
+}
+
+// ProjectHistory lists a project's transfers and region moves, newest first.
+type ProjectHistory struct {
+	Entries []ProjectHistoryEntry `json:"entries"`
+}
+
+// ==========================================
 // Region & Template Models
 // ==========================================
 
