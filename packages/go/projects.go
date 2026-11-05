@@ -55,6 +55,18 @@ type HibernationService struct {
 	client *Client
 }
 
+// ProjectTransfersService gives a project to another HubFly account or an
+// organization. The sender previews, gets an emailed code (CreateOTP) and
+// creates the offer; the recipient opens the emailed token (GetOffer),
+// previews a destination and accepts. The owner changes at the next full hour.
+//
+// Writes (CreateOTP, Create, Cancel, Accept, Decline and the bundle calls)
+// need a signed-in dashboard session: API keys and access tokens get
+// 403 MOVE_SESSION_REQUIRED (check with IsAPIErrorCode). Reads accept tokens.
+type ProjectTransfersService struct {
+	client *Client
+}
+
 // List returns all projects
 func (s *ProjectsService) List(ctx context.Context) (*Response[[]Project], error) {
 	return Request[[]Project](ctx, s.client, "GET", "/api/v1/projects", nil)
@@ -75,6 +87,12 @@ func (s *ProjectsService) Create(ctx context.Context, params CreateProjectParams
 func (s *ProjectsService) Delete(ctx context.Context, projectID string) (*Response[map[string]bool], error) {
 	path := fmt.Sprintf("/api/v1/projects/%s/delete", projectID)
 	return Request[map[string]bool](ctx, s.client, "DELETE", path, nil)
+}
+
+// History lists the project's transfers and region moves, newest first.
+func (s *ProjectsService) History(ctx context.Context, projectID string) (*Response[ProjectHistory], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/history", url.PathEscape(projectID))
+	return Request[ProjectHistory](ctx, s.client, "GET", path, nil)
 }
 
 // --- Containers ---
@@ -230,4 +248,94 @@ func (s *HibernationService) Preview(ctx context.Context, projectID string) (*Re
 func (s *HibernationService) Restore(ctx context.Context, projectID string) (*Response[HibernationStatus], error) {
 	path := fmt.Sprintf("/api/v1/projects/%s/hibernation/restore", projectID)
 	return Request[HibernationStatus](ctx, s.client, "POST", path, nil)
+}
+
+// --- Project transfers ---
+
+// TransferBundleConfirmText is the text a bundle transfer must be confirmed
+// with: "TRANSFER <n> PROJECTS".
+func TransferBundleConfirmText(projectCount int) string {
+	return fmt.Sprintf("TRANSFER %d PROJECTS", projectCount)
+}
+
+// Get returns the project's open transfer, or its latest one; Data is nil
+// when the project never had one.
+func (s *ProjectTransfersService) Get(ctx context.Context, projectID string) (*Response[*ProjectTransferView], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/transfer", url.PathEscape(projectID))
+	return Request[*ProjectTransferView](ctx, s.client, "GET", path, nil)
+}
+
+// Preview shows what a transfer would move and revoke, and what blocks it (sender only).
+func (s *ProjectTransfersService) Preview(ctx context.Context, projectID string) (*Response[ProjectTransferPreview], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/transfer/preview", url.PathEscape(projectID))
+	return Request[ProjectTransferPreview](ctx, s.client, "GET", path, nil)
+}
+
+// CreateOTP emails the sender a confirmation code bound to this project and recipient.
+func (s *ProjectTransfersService) CreateOTP(ctx context.Context, projectID, recipientEmail string) (*Response[ProjectTransferOTP], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/transfer/otp/create", url.PathEscape(projectID))
+	return Request[ProjectTransferOTP](ctx, s.client, "POST", path, map[string]string{"recipientEmail": recipientEmail})
+}
+
+// Create offers the project to an email address. The response is the same
+// whether or not the address has a HubFly account.
+func (s *ProjectTransfersService) Create(ctx context.Context, projectID string, params CreateProjectTransferParams) (*Response[ProjectTransferView], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/transfer/create", url.PathEscape(projectID))
+	return Request[ProjectTransferView](ctx, s.client, "POST", path, params)
+}
+
+// Cancel cancels the open offer, or an accepted transfer whose owner change
+// has not started. An accepted transfer may still read "accepted" while its
+// job rolls back; poll Get.
+func (s *ProjectTransfersService) Cancel(ctx context.Context, projectID string) (*Response[ProjectTransferView], error) {
+	path := fmt.Sprintf("/api/v1/projects/%s/transfer/cancel", url.PathEscape(projectID))
+	return Request[ProjectTransferView](ctx, s.client, "POST", path, struct{}{})
+}
+
+// List returns offers waiting for you (without tokens) and transfers you started.
+func (s *ProjectTransfersService) List(ctx context.Context) (*Response[ProjectTransferList], error) {
+	return Request[ProjectTransferList](ctx, s.client, "GET", "/api/v1/project-transfers", nil)
+}
+
+// GetOffer returns the offer behind an emailed token. Unknown tokens, offers
+// for another email address and closed offers all answer 404 TRANSFER_NOT_FOUND.
+func (s *ProjectTransfersService) GetOffer(ctx context.Context, token string) (*Response[ProjectTransferOfferView], error) {
+	path := fmt.Sprintf("/api/v1/project-transfers/%s", url.PathEscape(token))
+	return Request[ProjectTransferOfferView](ctx, s.client, "GET", path, nil)
+}
+
+// PreviewAcceptance shows what accepting into a destination costs and requires (recipient only).
+func (s *ProjectTransfersService) PreviewAcceptance(ctx context.Context, token string, params ProjectTransferDestinationParams) (*Response[ProjectTransferAcceptancePreview], error) {
+	query := url.Values{}
+	query.Set("destinationType", params.DestinationType)
+	if params.DestinationID != "" {
+		query.Set("destinationId", params.DestinationID)
+	}
+	for _, id := range params.TransferIDs {
+		query.Add("transferIds", id)
+	}
+	path := fmt.Sprintf("/api/v1/project-transfers/%s/preview?%s", url.PathEscape(token), query.Encode())
+	return Request[ProjectTransferAcceptancePreview](ctx, s.client, "GET", path, nil)
+}
+
+// Accept accepts the offer (or part of a bundle) into your account or an organization.
+func (s *ProjectTransfersService) Accept(ctx context.Context, token string, params AcceptProjectTransferParams) (*Response[[]ProjectTransferView], error) {
+	path := fmt.Sprintf("/api/v1/project-transfers/%s/accept", url.PathEscape(token))
+	return Request[[]ProjectTransferView](ctx, s.client, "POST", path, params)
+}
+
+// Decline declines every open project of the offer.
+func (s *ProjectTransfersService) Decline(ctx context.Context, token string) (*Response[map[string]bool], error) {
+	path := fmt.Sprintf("/api/v1/project-transfers/%s/decline", url.PathEscape(token))
+	return Request[map[string]bool](ctx, s.client, "POST", path, struct{}{})
+}
+
+// CreateBundleOTP emails the sender a code bound to these projects and recipient.
+func (s *ProjectTransfersService) CreateBundleOTP(ctx context.Context, params CreateProjectTransferBundleOTPParams) (*Response[ProjectTransferOTP], error) {
+	return Request[ProjectTransferOTP](ctx, s.client, "POST", "/api/v1/project-transfers/bundles/otp/create", params)
+}
+
+// CreateBundle offers several projects to one address with a single token.
+func (s *ProjectTransfersService) CreateBundle(ctx context.Context, params CreateProjectTransferBundleParams) (*Response[ProjectTransferBundle], error) {
+	return Request[ProjectTransferBundle](ctx, s.client, "POST", "/api/v1/project-transfers/bundles/create", params)
 }
