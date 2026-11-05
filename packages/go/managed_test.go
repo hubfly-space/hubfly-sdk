@@ -76,7 +76,7 @@ func managedCalls(c *Client) []struct {
 		id   string
 		call func(ctx context.Context) error
 	}
-	return []call{
+	return append([]call{
 		{"getManagedCatalog", func(ctx context.Context) error { return errOf(m.Catalog(ctx)) }},
 		{"getManagedClientIp", func(ctx context.Context) error { return errOf(m.ClientIP(ctx)) }},
 		{"getManagedPricing", func(ctx context.Context) error { return errOf(m.Pricing(ctx)) }},
@@ -88,7 +88,7 @@ func managedCalls(c *Client) []struct {
 		{"getManagedInstances", func(ctx context.Context) error { return errOf(ins.List(ctx, tP)) }},
 		{"getManagedInstance", func(ctx context.Context) error { return errOf(ins.Get(ctx, tP, tI)) }},
 		{"createManagedInstance", func(ctx context.Context) error {
-			return errOf(ins.Create(ctx, tP, CreateManagedInstanceBody{Name: "rt", Service: "realtime", Size: ManagedInstanceSizeInput{CPU: 0.5, MemoryMib: 512}, QuotedHourlyTotal: 0.01, IdempotencyKey: "k1"}))
+			return errOf(ins.Create(ctx, tP, CreateManagedInstanceBody{Name: "rt", Service: "realtime", Size: &ManagedInstanceSizeInput{CPU: 0.5, MemoryMib: 512}, QuotedHourlyTotal: 0.01, IdempotencyKey: "k1"}))
 		}},
 		{"updateManagedInstance", func(ctx context.Context) error {
 			return errOf(ins.Update(ctx, tP, tI, UpdateManagedInstanceBody{Name: "renamed"}))
@@ -279,7 +279,7 @@ func managedCalls(c *Client) []struct {
 			return errOf(rt.DeleteBinding(ctx, tP, tI, "bind_1", &DeleteManagedRealtimeBindingQuery{RemoveVariables: Ptr(false)}))
 		}},
 		{"getManagedRealtimeConnection", func(ctx context.Context) error { return errOf(rt.GetConnection(ctx, tP, tI)) }},
-	}
+	}, managedStreamCalls(c)...)
 }
 
 func pathPattern(template string) *regexp.Regexp {
@@ -287,7 +287,7 @@ func pathPattern(template string) *regexp.Regexp {
 }
 
 func TestManagedCoversEveryOperation(t *testing.T) {
-	fake, client := newFakeManagedAPI(t, nil)
+	fake, client := newFakeManagedAPI(t, managedStreamListResponder)
 	ctx := context.Background()
 	ops := map[string]managedOperation{}
 	for _, op := range managedOperations {
