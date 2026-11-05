@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { GENERATED_MARKER, checkManaged, isManagedPath } from './generate-managed';
+import { ANALYTICS_SCOPE, GENERATED_MARKER, MANAGED_SCOPE, SCOPES, checkManaged, isAnalyticsPath, isManagedPath } from './generate-managed';
 
-// Usage: bun run scripts/verify-spec-diff.ts [--strict] [--scope managed]
-//   --scope managed  only the Managed Services operations (paths with a /managed
-//                    segment); also checks that the generated managed types
-//                    (scripts/generate-managed.ts) match the spec.
-//   --strict         exit 1 on any uncovered operation (or managed type drift).
+// Usage: bun run scripts/verify-spec-diff.ts [--strict] [--scope managed|analytics]
+//   --scope managed    only the Managed Services operations (paths with a /managed
+//                      segment); also checks that the generated types
+//                      (scripts/generate-managed.ts) match the spec.
+//   --scope analytics  only the Web Analytics operations (/api/v1/analytics/**,
+//                      /api/v1/projects/:projectId/analytics/**), same type check.
+//   --strict           exit 1 on any uncovered operation (or generated type drift).
 
 interface OpenApiSpec {
   paths?: Record<string, Record<string, {
@@ -133,8 +135,9 @@ function scopeArg(): string {
 function runVerification(): DiffReport {
   const specPath = resolveOpenApiSpecPath();
   const scope = scopeArg();
-  if (scope !== 'all' && scope !== 'managed') throw new Error(`Unknown --scope ${scope} (use all or managed)`);
-  const operations = parseOpenApiOperations(specPath).filter((op) => scope === 'all' || isManagedPath(op.path));
+  if (scope !== 'all' && scope !== 'managed' && scope !== 'analytics') throw new Error(`Unknown --scope ${scope} (use all, managed or analytics)`);
+  const inScope = scope === 'managed' ? isManagedPath : scope === 'analytics' ? isAnalyticsPath : () => true;
+  const operations = parseOpenApiOperations(specPath).filter((op) => inScope(op.path));
 
   const tsSdkDir = path.resolve(import.meta.dirname, '../packages/ts/src');
   const goSdkDir = path.resolve(import.meta.dirname, '../packages/go');
@@ -181,13 +184,13 @@ function runVerification(): DiffReport {
     }
   }
 
-  const tsCoverage = Math.round((tsMatchedCount / operations.length) * 100);
-  const goCoverage = Math.round((goMatchedCount / operations.length) * 100);
+  const tsCoverage = operations.length ? Math.round((tsMatchedCount / operations.length) * 100) : 100;
+  const goCoverage = operations.length ? Math.round((goMatchedCount / operations.length) * 100) : 100;
 
   let managedTypeDrift: string[] | null = null;
   let managedTypeError: string | undefined;
   try {
-    managedTypeDrift = checkManaged(specPath);
+    managedTypeDrift = checkManaged(specPath, scope === 'managed' ? [MANAGED_SCOPE] : scope === 'analytics' ? [ANALYTICS_SCOPE] : SCOPES);
   } catch (error) {
     managedTypeError = error instanceof Error ? error.message : String(error);
   }
@@ -210,7 +213,7 @@ function printReport(report: DiffReport) {
   console.log('         HUBFLY SDK & OPENAPI SPEC VERIFICATION PIPELINE       ');
   console.log('=============================================================\n');
   console.log(`Timestamp:               ${report.timestamp}`);
-  console.log(`Scope:                    ${report.scope === 'managed' ? 'Managed Services (/managed paths)' : 'all operations'}`);
+  console.log(`Scope:                    ${report.scope === 'managed' ? 'Managed Services (/managed paths)' : report.scope === 'analytics' ? 'Web Analytics (/analytics paths)' : 'all operations'}`);
   console.log(`Total OpenAPI Operations: ${report.totalOpenApiOperations}`);
   console.log(`TypeScript SDK Coverage:  ${report.tsCoveragePercent}%`);
   console.log(`Go SDK Coverage:          ${report.goCoveragePercent}%\n`);
@@ -242,23 +245,31 @@ function printReport(report: DiffReport) {
   }
 
   if (report.managedTypeError) {
-    console.log(`⚠️  Managed types not checked: ${report.managedTypeError}\n`);
+    console.log(`⚠️  Generated types not checked: ${report.managedTypeError}\n`);
   } else if (report.managedTypeDrift && report.managedTypeDrift.length > 0) {
-    console.log('⚠️  Generated managed types drift from the spec (run: make generate-managed):');
+    console.log('⚠️  Generated types drift from the spec (run: make generate-managed):');
     for (const file of report.managedTypeDrift) console.log(`   - ${file}`);
     console.log('');
   } else {
-    console.log('✅ Generated managed types (TS + Go) match the spec.');
+    console.log('✅ Generated managed and analytics types (TS + Go) match the spec.');
   }
 
   console.log('=============================================================\n');
 
   const strictMode = process.argv.includes('--strict');
   const typeProblem =
-    report.scope === 'managed' && (report.managedTypeError !== undefined || (report.managedTypeDrift?.length ?? 0) > 0);
+    report.scope !== 'all' && (report.managedTypeError !== undefined || (report.managedTypeDrift?.length ?? 0) > 0);
   const hasDiffs = report.missingTsOperations.length > 0 || report.missingGoOperations.length > 0 || typeProblem;
 
-  if (strictMode && hasDiffs) {
+  // A scope with no operations means the spec predates it (for example the
+  // primary hubfly-dashboard tree before Web Analytics); coverage would be a
+  // vacuous 100%. Point OPENAPI_PATH at the tree that has the routes.
+  const emptyScope = report.scope !== 'all' && report.totalOpenApiOperations === 0;
+
+  if (strictMode && emptyScope) {
+    console.error(`ERROR: the spec has no ${report.scope} operations; set OPENAPI_PATH to a spec that includes them.`);
+    process.exit(1);
+  } else if (strictMode && hasDiffs) {
     console.error('ERROR: SDK spec drift detected in strict mode!');
     process.exit(1);
   } else {
