@@ -29,6 +29,20 @@ export const ManagedErrorCodes = {
   REALTIME_E2E_CONNECTION_ID: 'MANAGED_REALTIME_E2E_CONNECTION_ID',
   /** 404: no such connection. */
   REALTIME_CONNECTION_NOT_FOUND: 'MANAGED_REALTIME_CONNECTION_NOT_FOUND',
+  /** 409: no stream node in the region has room for this speed. */
+  STREAM_CAPACITY_FULL: 'STREAM_CAPACITY_FULL',
+  /** 409: speed above the account limit (250 Mbps without a deposit). */
+  STREAM_SPEED_LIMIT: 'STREAM_SPEED_LIMIT',
+  /** 422: the resource failed validation; details hold {path, code, message}. */
+  STREAM_INVALID: 'STREAM_INVALID',
+  /** 409: the resource changed since you read it; read it again and retry. */
+  STREAM_REVISION_CONFLICT: 'STREAM_REVISION_CONFLICT',
+  /** 409: another resource still references this one. */
+  STREAM_IN_USE: 'STREAM_IN_USE',
+  /** 503: the stream node did not answer; retry later. */
+  STREAM_NODE_UNAVAILABLE: 'STREAM_NODE_UNAVAILABLE',
+  /** 409: the channel is not live or has no DVR window. */
+  STREAM_NOT_LIVE: 'STREAM_NOT_LIVE',
 } as const;
 
 export type ManagedErrorCode = (typeof ManagedErrorCodes)[keyof typeof ManagedErrorCodes];
