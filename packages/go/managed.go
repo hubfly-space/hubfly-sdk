@@ -1,6 +1,6 @@
 package hubfly
 
-// Managed Services (Databases + Realtime) of the Dashboard API.
+// Managed Services (Databases, Realtime, Streams) of the Dashboard API.
 //
 // Every request and response type comes from managed_types.go, which
 // scripts/generate-managed.ts generates from the Dashboard's openapi.json.
@@ -46,6 +46,20 @@ const (
 	ErrCodeManagedRealtimeE2EConnectionID = "MANAGED_REALTIME_E2E_CONNECTION_ID"
 	// ErrCodeManagedRealtimeConnectionNotFound (404): no such connection.
 	ErrCodeManagedRealtimeConnectionNotFound = "MANAGED_REALTIME_CONNECTION_NOT_FOUND"
+	// ErrCodeStreamCapacityFull (409): no stream node in the region has room for this speed.
+	ErrCodeStreamCapacityFull = "STREAM_CAPACITY_FULL"
+	// ErrCodeStreamSpeedLimit (409): speed above the account limit (250 Mbps without a deposit).
+	ErrCodeStreamSpeedLimit = "STREAM_SPEED_LIMIT"
+	// ErrCodeStreamInvalid (422): the resource failed validation; details hold {path, code, message}.
+	ErrCodeStreamInvalid = "STREAM_INVALID"
+	// ErrCodeStreamRevisionConflict (409): the resource changed since you read it; read it again and retry.
+	ErrCodeStreamRevisionConflict = "STREAM_REVISION_CONFLICT"
+	// ErrCodeStreamInUse (409): another resource still references this one.
+	ErrCodeStreamInUse = "STREAM_IN_USE"
+	// ErrCodeStreamNodeUnavailable (503): the stream node did not answer; retry later.
+	ErrCodeStreamNodeUnavailable = "STREAM_NODE_UNAVAILABLE"
+	// ErrCodeStreamNotLive (409): the channel is not live or has no DVR window.
+	ErrCodeStreamNotLive = "STREAM_NOT_LIVE"
 )
 
 // Ptr returns a pointer to v, for optional request fields:
@@ -89,6 +103,8 @@ type ManagedService struct {
 	Databases *ManagedDatabasesService
 	// Realtime holds the realtime-server endpoints.
 	Realtime *ManagedRealtimeService
+	// Streams holds the stream-server endpoints.
+	Streams *ManagedStreamsService
 }
 
 func newManagedService(c *Client) *ManagedService {
@@ -97,6 +113,7 @@ func newManagedService(c *Client) *ManagedService {
 		Instances: &ManagedInstancesService{client: c},
 		Databases: &ManagedDatabasesService{client: c},
 		Realtime:  &ManagedRealtimeService{client: c},
+		Streams:   &ManagedStreamsService{client: c},
 	}
 }
 
