@@ -1,0 +1,95 @@
+{
+  "description": "Webhook signatures: HubFly-Signature: t=<unix>,v1=<hex HMAC-SHA256(secret as UTF-8, \"<t>.<raw body>\")>. Valid when any v1 equals the expected lowercase hex (constant-time) and |now - t| <= tolerance_seconds.",
+  "cases": [
+    {
+      "name": "valid",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "t=1767225600,v1=03a930aadaba789843660777edac819d77c798bec9d6b7f3e16789d2107a0a00",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_main0001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": true
+    },
+    {
+      "name": "valid within tolerance",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "t=1767225301,v1=88ec508fcd3f8e946b41ffdc71ac1c1cd08f3b3ce2b5607e51ee304f64cfc3d8",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_main0001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": true
+    },
+    {
+      "name": "rotation: one of two v1 matches",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "t=1767225600,v1=8a55f755f135e7548c0faa260c6292e440b3498af40a5eece238653e8a1502aa,v1=03a930aadaba789843660777edac819d77c798bec9d6b7f3e16789d2107a0a00",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_main0001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": true
+    },
+    {
+      "name": "body changed",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "t=1767225600,v1=03a930aadaba789843660777edac819d77c798bec9d6b7f3e16789d2107a0a00",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_other001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": false
+    },
+    {
+      "name": "wrong secret",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "t=1767225600,v1=8a55f755f135e7548c0faa260c6292e440b3498af40a5eece238653e8a1502aa",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_main0001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": false
+    },
+    {
+      "name": "too old",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "t=1767225299,v1=9430f4e64083d6865e81dbf24dc65396d254a4ecc49b59b8c6921a62362e2005",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_main0001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": false
+    },
+    {
+      "name": "from the future",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "t=1767225901,v1=eef66c286546c68158c2ded69f63b341d3da5d39def3f6aaf667f1f24ba55088",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_main0001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": false
+    },
+    {
+      "name": "timestamp missing",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "v1=03a930aadaba789843660777edac819d77c798bec9d6b7f3e16789d2107a0a00",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_main0001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": false
+    },
+    {
+      "name": "signature missing",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "t=1767225600",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_main0001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": false
+    },
+    {
+      "name": "uppercase hex is not accepted",
+      "secret": "whsec_2Jq8fK0vN5xR7mT1wB4cY9hL3dS6aZp",
+      "header": "t=1767225600,v1=03A930AADABA789843660777EDAC819D77C798BEC9D6B7F3E16789D2107A0A00",
+      "body": "{\"id\":\"evt_9f8e7d6c\",\"type\":\"channel.live\",\"at\":\"2026-01-01T00:00:00Z\",\"tenant\":\"msi_abc12345\",\"data\":{\"channel\":\"sch_main0001\"}}",
+      "now": 1767225600,
+      "tolerance_seconds": 300,
+      "valid": false
+    }
+  ]
+}
