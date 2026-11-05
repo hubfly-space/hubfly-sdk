@@ -562,6 +562,275 @@ export interface HibernationPreview {
 }
 
 // ==========================================
+// Project Moves (transfers, region migration, history)
+// ==========================================
+// Shapes of hubfly-dashboard/shared/project-moves.ts. Region migration types
+// join this section.
+
+export type ProjectJobKind =
+  | "project_transfer"
+  | "project_migration"
+  | "migration_reverse"
+  | "metadata_rehome";
+
+export type ProjectJobStatus =
+  | "queued"
+  | "running"
+  | "waiting"
+  | "rolling_back"
+  | "succeeded"
+  | "failed"
+  | "canceled"
+  | "needs_attention";
+
+export type ProjectJobStepStatus =
+  | "pending"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "skipped";
+
+/** `config` pauses changes to the project; `full` also stops its workloads. */
+export type ProjectLockLevel = "config" | "full";
+
+/** The long-running job behind a transfer or a region move. */
+export interface ProjectJobView {
+  id: string;
+  kind: ProjectJobKind;
+  status: ProjectJobStatus;
+  phase: "forward" | "compensation";
+  lock: ProjectLockLevel | null;
+  step: string | null;
+  stepLabel: string | null;
+  stepIndex: number;
+  stepCount: number;
+  steps: {
+    key: string;
+    label: string;
+    status: ProjectJobStepStatus;
+    phase: "forward" | "compensation";
+    startedAt: string | null;
+    finishedAt: string | null;
+  }[];
+  progress: number | null;
+  etaSeconds: number | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  remediationCode: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  nextRunAt: string | null;
+}
+
+/** A personal account or an organization that owns projects. */
+export interface OwnerRef {
+  type: "user" | "organization";
+  id: string;
+  name: string;
+}
+
+export type MoveIssueSeverity = "blocker" | "warning" | "info";
+
+/** A blocker, warning or note of a transfer or migration preview. */
+export interface MoveIssue {
+  /** e.g. `TRANSFER_WORK_IN_PROGRESS`, `TRANSFER_ENV_VISIBLE`. */
+  code: string;
+  severity: MoveIssueSeverity;
+  message: string;
+  detail?: Record<string, string | number | boolean | null | string[]>;
+}
+
+/** A count of one kind of resource that moves or is revoked. */
+export interface MoveCount {
+  kind: string;
+  label: string;
+  count: number;
+}
+
+export type ProjectTransferStatus =
+  | "pending"
+  | "accepted"
+  | "declined"
+  | "canceled"
+  | "expired"
+  | "completed"
+  | "failed";
+
+export interface ProjectTransferView {
+  id: string;
+  /** null once the project was deleted. */
+  projectId: string | null;
+  projectName: string;
+  projectType: string;
+  status: ProjectTransferStatus;
+  recipientEmail: string;
+  from: OwnerRef;
+  /** Set once the offer is accepted. */
+  to: OwnerRef | null;
+  expiresAt: string;
+  createdAt: string;
+  acceptedAt: string | null;
+  completedAt: string | null;
+  /** The full hour at which the owner changes. */
+  handoverAt: string | null;
+  job: ProjectJobView | null;
+  failureCode: string | null;
+  failureMessage: string | null;
+}
+
+/** What a transfer would move and revoke, and what blocks it (sender only). */
+export interface ProjectTransferPreview {
+  projectId: string;
+  projectName: string;
+  projectType: string;
+  canTransfer: boolean;
+  blockers: MoveIssue[];
+  warnings: MoveIssue[];
+  moves: MoveCount[];
+  revokedIfSenderLosesAccess: MoveCount[];
+  envValueCount: number;
+  requiresOtp: true;
+}
+
+/** Where the transfer confirmation code was sent. */
+export interface ProjectTransferOtp {
+  sentTo: string;
+  expiresAt: string;
+}
+
+/** An offer waiting for you. The token is only in the offer email. */
+export interface ProjectTransferOfferSummary {
+  token: null;
+  transferId: string;
+  batchId: string | null;
+  projectName: string;
+  projectType: string;
+  senderName: string;
+  expiresAt: string;
+  status: ProjectTransferStatus;
+}
+
+export interface ProjectTransferList {
+  incoming: ProjectTransferOfferSummary[];
+  outgoing: ProjectTransferView[];
+}
+
+export interface ProjectTransferOfferView {
+  batchId: string | null;
+  senderName: string;
+  expiresAt: string;
+  status: ProjectTransferStatus;
+  projects: {
+    transferId: string;
+    projectName: string;
+    projectType: string;
+    hosting: {
+      hostnames: string[];
+      customDomains: string[];
+      mailDomains: string[];
+      buckets: number;
+      containers: number;
+      volumes: number;
+      boxes: number;
+    };
+    /** Direct members; they lose access unless kept with `keepMembers`. */
+    members: {
+      userId: string;
+      name: string;
+      email: string;
+      permissions: string[];
+      credentials: string[];
+    }[];
+  }[];
+  destinations: {
+    type: "user" | "organization";
+    id: string;
+    name: string;
+    eligible: boolean;
+    reason: string | null;
+  }[];
+}
+
+/** What accepting into a destination costs and requires (recipient only). */
+export interface ProjectTransferAcceptancePreview {
+  eligible: boolean;
+  blockers: MoveIssue[];
+  warnings: MoveIssue[];
+  balanceMicroUsd: number;
+  requiredBalanceMicroUsd: number;
+  hourlyBurnMicroUsd: number;
+  billedPlans: {
+    kind: string;
+    label: string;
+    amountMicroUsd: number;
+    period: string;
+  }[];
+  credentialPolicy: "rotate" | "keep";
+  revoked: MoveCount[];
+}
+
+export interface ProjectTransferOptions {
+  /** `rotate` revokes every project credential at the handover; `auto` (default) only those of people who lose access. */
+  credentialPolicy?: "auto" | "rotate";
+}
+
+export interface CreateProjectTransferOtpParams {
+  recipientEmail: string;
+}
+
+export interface CreateProjectTransferParams {
+  recipientEmail: string;
+  /** The project name, typed to confirm. */
+  confirmName: string;
+  /** The code from `transfers.createOtp`. */
+  otp: string;
+  options?: ProjectTransferOptions;
+}
+
+export interface CreateProjectTransferBundleOtpParams {
+  projectIds: string[];
+  recipientEmail: string;
+}
+
+export interface CreateProjectTransferBundleParams {
+  projectIds: string[];
+  recipientEmail: string;
+  /** `TRANSFER <n> PROJECTS`; see `transferBundleConfirmText`. */
+  confirmText: string;
+  otp: string;
+  options?: ProjectTransferOptions;
+}
+
+export interface ProjectTransferBundle {
+  batchId: string;
+  transfers: ProjectTransferView[];
+}
+
+export interface ProjectTransferDestinationParams {
+  destinationType: "user" | "organization";
+  /** The organization id (or your user id) to accept into. */
+  destinationId?: string;
+  /** A subset of a bundle; every open project of the offer when omitted. */
+  transferIds?: string[];
+}
+
+export interface AcceptProjectTransferParams extends ProjectTransferDestinationParams {
+  /** Direct members who keep their access; everyone else is removed. */
+  keepMembers?: { transferId: string; userIds: string[] }[];
+}
+
+export interface ProjectHistoryEntry {
+  id: string;
+  kind: "transfer" | "migration" | "reverse" | "rehome" | "evacuation";
+  status: string;
+  title: string;
+  detail: string | null;
+  actor: string | null;
+  at: string;
+  href: string | null;
+}
+
+// ==========================================
 // Regions & Templates Models
 // ==========================================
 export interface Region {
@@ -638,3 +907,192 @@ export interface SystemHealth {
   uptimeSeconds: number;
   timestamp: string;
 }
+
+// Region migrations. Writes accept only unrestricted personal access tokens or browser sessions.
+export type ProjectMigrationMode = "cold" | "warm";
+export type ProjectMigrationKind = "migration" | "reverse" | "rehome";
+export type ProjectMigrationStatus = "scheduled" | "preparing" | "syncing" | "awaiting_window" | "awaiting_decision" | "frozen" | "verifying" | "cutting_over" | "watching" | "completed" | "failed" | "rolled_back" | "canceled" | "needs_attention";
+
+export type RegionRef = { id: string; name: string; location: string };
+export type FreezeEstimate = {
+	seconds: number;
+	lowSeconds: number;
+	highSeconds: number;
+	basis: string;
+};
+export type UrlMapEntry = {
+	kind: "http" | "tcp" | "lb" | "subdomain" | "registry";
+	old: string;
+	new: string;
+	editable: boolean;
+};
+export type DnsRecordPlan = {
+	name: string;
+	type: "CNAME" | "A";
+	current: string;
+	next: string;
+	ttlSeconds: number | null;
+	wildcard: boolean;
+	status: "pending" | "switched" | "unknown";
+	checkedAt: string | null;
+	certificateReady: boolean;
+};
+export type DnsPlan = {
+	records: DnsRecordPlan[];
+	registryHost: { old: string; new: string } | null;
+	tcpEndpoints: { old: string; new: string }[];
+	egress: { old: string[]; new: string[] };
+};
+export type ChecklistItem = {
+	id: string;
+	title: string;
+	detail: string;
+	copy: string | null;
+	severity: MoveIssueSeverity;
+};
+export type MigrationTargetRegion = RegionRef & {
+	eligible: boolean;
+	reason: string | null;
+	latencyHint: string | null;
+};
+export type ProjectMigrationPreview = {
+	projectId: string;
+	source: RegionRef;
+	target: RegionRef;
+	canMigrate: boolean;
+	blockers: MoveIssue[];
+	warnings: MoveIssue[];
+	recommendedMode: ProjectMigrationMode;
+	estimates: { cold: FreezeEstimate; warm: FreezeEstimate };
+	data: { volumeBytes: number; rootfsBytes: number; imageBytes: number };
+	bandwidth: { bytesPerSecond: number; measuredAt: string } | null;
+	feeMicroUsd: number;
+	feeWaived: boolean;
+	urlMap: UrlMapEntry[];
+	dnsPlan: DnsPlan;
+	checklist: ChecklistItem[];
+};
+export type MigrationPassView = {
+	pass: number;
+	startedAt: string;
+	finishedAt: string | null;
+	bytesTransferred: number;
+	changedChunks: number;
+	seconds: number;
+	freezeEstimateSeconds: number;
+};
+export type MigrationItemView = {
+	resourceType: string;
+	resourceId: string;
+	label: string;
+	state: string;
+	bytesTotal: number;
+	bytesDone: number;
+	rateBytesPerSecond: number | null;
+	etaSeconds: number | null;
+};
+export type VerificationCheck = {
+	id: string;
+	label: string;
+	status: "pending" | "passed" | "failed" | "skipped" | "info";
+	detail: string | null;
+};
+export type ProjectMigrationView = {
+	id: string;
+	projectId: string | null;
+	projectName: string;
+	kind: ProjectMigrationKind;
+	status: ProjectMigrationStatus;
+	mode: ProjectMigrationMode;
+	initiatedBy: "customer" | "evacuation" | "operator";
+	source: RegionRef;
+	target: RegionRef;
+	scheduledAt: string | null;
+	maxFreezeSeconds: number | null;
+	estimates: {
+		cold?: FreezeEstimate;
+		warm?: FreezeEstimate;
+		current?: FreezeEstimate;
+	};
+	bytesTotal: number;
+	bytesDone: number;
+	passes: MigrationPassView[];
+	items: MigrationItemView[];
+	freezeStartedAt: string | null;
+	freezeEndedAt: string | null;
+	cutoverAt: string | null;
+	completedAt: string | null;
+	urlMap: UrlMapEntry[];
+	dnsPlan: DnsPlan;
+	checklist: ChecklistItem[];
+	verification: { checks: VerificationCheck[]; passed: boolean | null };
+	bridge: {
+		status: "none" | "active" | "removed";
+		until: string | null;
+		trafficOnTargetPercent: number | null;
+	};
+	sourceRetainedUntil: string | null;
+	sourceCleanedAt: string | null;
+	feeMicroUsd: number;
+	refunded: boolean;
+	canCancel: boolean;
+	canMoveBack: boolean;
+	decisionPending: boolean;
+	job: ProjectJobView | null;
+	failureCode: string | null;
+	failureMessage: string | null;
+	createdAt: string;
+};
+export type ProjectMigrationDnsStatus = {
+	records: DnsRecordPlan[];
+	checkedAt: string | null;
+	bridgeUntil: string | null;
+};
+export type MigrationAttestation = {
+	attestation: {
+		version: 1;
+		migrationId: string;
+		projectId: string | null;
+		source: string;
+		target: string;
+		objects: {
+			kind: string;
+			name: string;
+			sizeBytes: number;
+			merkleRoot: string;
+		}[];
+		images: { reference: string; digest: string }[];
+		freezeStartedAt: string | null;
+		cutoverAt: string | null;
+		sourceCleanedAt: string | null;
+		issuedAt: string;
+	};
+	signature: string;
+	keyId: string;
+};
+export type MigrationBatchView = {
+	id: string;
+	kind: "customer_migration" | "evacuation";
+	status: string;
+	target: RegionRef | null;
+	source: RegionRef | null;
+	concurrency: number;
+	deadlineAt: string | null;
+	counters: Record<string, number>;
+	migrations: ProjectMigrationView[];
+	createdAt: string;
+};
+export type ProjectMoveNotice = {
+	id: string;
+	kind: "transfer_offer" | "evacuation" | "migration_decision" | "dns_pending";
+	title: string;
+	detail: string;
+	href: string;
+	deadlineAt: string | null;
+	projectId: string | null;
+};
+
+
+export interface CreateProjectMigrationParams {targetRegionId:string;mode:ProjectMigrationMode;confirmName:string;scheduledAt?:string|null;maxFreezeSeconds?:number|null;hostnameOverrides?:{old:string;new:string}[];managedAllowlistConsent?:boolean;}
+export interface CreateMigrationBatchParams {projectIds:string[];targetRegionId:string;mode:ProjectMigrationMode;confirmText:string;scheduledAt?:string|null;maxFreezeSeconds?:number|null;}
+export interface MigrationBandwidthProbe {bytesPerSecond:number;measuredAt:string;observedEgressIp:string|null;}
