@@ -298,6 +298,86 @@ Other codes: `send_limit_reached` (429, a person's hourly/daily limit), `attachm
 `sender_not_ready` (409, the identity's domain cannot send yet), `too_late` (409, cancel after
 dispatch). Raw messages and attachments download as `MailboxFile` (`data: ArrayBuffer`, `blob()`).
 
+### 7. Web Analytics
+
+`hubfly.analytics` manages cookieless Web Analytics. A site belongs to a Cell, Box or standalone
+Analytics project and lives in its region. Browsers send events with the
+[`@hubfly/analytics`](../analytics) tracker (or the snippet each site returns); this module manages
+sites and reads reports. Reading needs `project:read`; changes need `project:edit`, sites on HubFly
+domains also `network:manage`, and the monthly event cap `billing:manage`.
+
+```typescript
+import { AnalyticsErrorCodes, HubflyApiError } from '@hubfly/sdk';
+
+// A website hosted elsewhere: its domain must be a verified custom domain.
+const check = await hubfly.analytics.verifyDomain(projectId, 'example.com');
+if (check.data.status === 'pending') console.log(`TXT ${check.data.txtHost} = ${check.data.txtValue}`);
+
+try {
+  const { data: site } = await hubfly.analytics.sites.create(projectId, {
+    source: 'external', domain: 'example.com', retentionDays: 90,
+  });
+  console.log(site.install.snippet); // <script …> for every page's <head>
+} catch (err) {
+  if (err instanceof HubflyApiError && err.code === AnalyticsErrorCodes.UNAVAILABLE) {
+    console.log((err.details as { reason: string }).reason); // disabled, billing_not_live, …
+  }
+}
+
+// A domain the project serves on HubFly: HubFly injects the script.
+const { data: routes } = await hubfly.analytics.routes(projectId);
+const route = routes.find((r) => r.hostname === 'app.example.com')!;
+await hubfly.analytics.sites.create(projectId, {
+  source: 'hubfly_route', domain: route.hostname, routeType: route.routeType, routeId: route.routeId,
+});
+```
+
+Reports go through one typed `query`; the result type follows `type`:
+
+```typescript
+const { data: totals } = await hubfly.analytics.sites.query(projectId, siteId, {
+  type: 'aggregate', range: { period: '30d' }, compare: 'previous_period',
+  metrics: ['visitors', 'pageviews', 'bounce_rate', 'visit_duration'],
+});
+console.log(totals.results.visitors.value, totals.results.visitors.change); // change in %
+
+const { data: pages } = await hubfly.analytics.sites.query(projectId, siteId, {
+  type: 'breakdown', dim: 'page', limit: 10, range: { from: '2026-10-01', to: '2026-10-28' },
+  filters: [{ dim: 'country', op: 'is', values: ['DE'] }],
+});
+for (const row of pages.results) console.log(row.value, row.values.visitors);
+
+const { data: live } = await hubfly.analytics.sites.realtime(projectId, siteId);
+console.log(`${live.visitors} visitors right now`);
+```
+
+Other report types: `timeseries` (`interval`), `goals`, `funnel` (`funnel` or a saved `funnelId`),
+`journeys`, `vitals` (`by`), `errors` and `props`. `segmentId` applies a saved segment.
+`meta.partial` and `meta.coveredFrom` say when a filtered report could only read the site's raw
+retention.
+
+```typescript
+await hubfly.analytics.goals.create(projectId, siteId, { name: 'Signup', kind: 'event', match: 'Signup' });
+await hubfly.analytics.funnels.create(projectId, siteId, {
+  name: 'Checkout',
+  steps: [
+    { kind: 'pageview', match: '/cart', label: 'Cart' },
+    { kind: 'event', match: 'Purchase', label: 'Paid' },
+  ],
+});
+const { data: link } = await hubfly.analytics.shares.create(projectId, siteId, { password: 'board-only' });
+const { data: key } = await hubfly.analytics.keys.create(projectId, siteId, 'backend'); // key.key is shown once
+const { data: csv } = await hubfly.analytics.sites.export(projectId, siteId, {
+  from: '2026-10-01', to: '2026-10-07', kind: 'sessions', format: 'csv',
+}); // csv.content, csv.truncated beyond 8 MB
+await hubfly.analytics.setEventCap(projectId, 5_000_000); // null removes it
+```
+
+`hubfly.analytics.shared` reads a shared dashboard by its slug without signing in
+(`unlock(slug, password)` returns a 24-hour token for protected links). The types and the operation
+table (`ANALYTICS_OPERATIONS`) are generated with `make generate-managed`; `make verify-spec-analytics`
+checks them.
+
 ---
 
 ## License
