@@ -16,15 +16,16 @@ export type CreateManagedInstanceBindingResponse = ManagedDatabaseBinding;
 /** Request object (first seen in createManagedInstance body). */
 export interface CreateManagedInstanceBody {
   name: string;
-  service?: "database" | "realtime";
-  engine?: "realtime" | "postgresql" | "mysql" | "libsql";
+  service?: "database" | "realtime" | "stream";
+  engine?: "realtime" | "stream" | "postgresql" | "mysql" | "libsql";
   version?: string;
-  size: ManagedInstanceSizeInput;
+  size?: ManagedInstanceSizeInput;
   publicAccess?: boolean;
   allowlist?: ManagedAllowlistEntryInput[];
   defaultDatabaseName?: string;
   adminUsername?: string;
   initialApp?: ManagedRealtimeInitialAppInput;
+  stream?: CreateManagedInstanceStreamInput;
   quotedHourlyTotal: number;
   idempotencyKey: string;
 }
@@ -54,12 +55,97 @@ export interface CreateManagedInstanceExportResponse {
   operationId: string;
 }
 
+/** Object (first seen in createManagedInstance response.instance.stream). */
+export interface CreateManagedInstanceInstanceStream {
+  host: string;
+  speedMbps: number;
+  processingMbps: number;
+  webrtcSessions: number;
+  timezone: string;
+  sync: CreateManagedInstanceInstanceStreamSync;
+  billing: CreateManagedInstanceInstanceStreamBilling;
+  ingest: CreateManagedInstanceInstanceStreamIngest;
+  live: CreateManagedInstanceInstanceStreamLive | null;
+  price: CreateManagedInstanceInstanceStreamPrice;
+}
+
+/** Object (first seen in createManagedInstance response.instance.stream.billing). */
+export interface CreateManagedInstanceInstanceStreamBilling {
+  allowed: boolean;
+  reason: "suspended" | "balance" | "spend_cap" | null;
+}
+
+/** Object (first seen in createManagedInstance response.instance.stream.ingest). */
+export interface CreateManagedInstanceInstanceStreamIngest {
+  rtmp: string;
+  rtmps: string;
+  srt: string;
+  whipBase: string;
+  icecastBase: string;
+}
+
+/** Object (first seen in createManagedInstance response.instance.stream.live). */
+export interface CreateManagedInstanceInstanceStreamLive {
+  inputsLive: number;
+  channelsLive: number;
+  viewers: number;
+  egressMbps: number;
+  at: string;
+}
+
+/** Object (first seen in createManagedInstance response.instance.stream.price). */
+export interface CreateManagedInstanceInstanceStreamPrice {
+  speedMicroUsdPerHour: number;
+  speedUsdPerMonth: number;
+}
+
+/** Object (first seen in createManagedInstance response.instance.stream.sync). */
+export interface CreateManagedInstanceInstanceStreamSync {
+  generation: number;
+  appliedGeneration: number;
+  lastSyncedAt: string | null;
+  lastError: string | null;
+}
+
 /** Object (first seen in createManagedInstance response). */
 export interface CreateManagedInstanceResponse {
   instance: ManagedInstance;
   operationId: string;
   price: ManagedPrice;
   initialApp: ManagedRealtimeInitialApp | null;
+  stream?: CreateManagedInstanceStream;
+}
+
+/** Object (first seen in createManagedInstance response.stream). */
+export interface CreateManagedInstanceStream {
+  host: string;
+  firstInput?: CreateManagedInstanceStreamFirstInput;
+}
+
+/** Object (first seen in createManagedInstance response.stream.firstInput). */
+export interface CreateManagedInstanceStreamFirstInput {
+  id: string;
+  name: string;
+  keys: CreateManagedInstanceStreamFirstInputKeys;
+}
+
+/** Request object (first seen in createManagedInstance body.stream.firstInput). */
+export interface CreateManagedInstanceStreamFirstInputInput {
+  name: string;
+  kind?: "push";
+}
+
+/** Object (first seen in createManagedInstance response.stream.firstInput.keys). */
+export interface CreateManagedInstanceStreamFirstInputKeys {
+  primary: string;
+}
+
+/** Request object (first seen in createManagedInstance body.stream). */
+export interface CreateManagedInstanceStreamInput {
+  speedMbps: number;
+  processingMbps?: number;
+  timezone?: string;
+  firstInput?: CreateManagedInstanceStreamFirstInputInput;
 }
 
 /** Request object (first seen in createManagedInstanceToken body). */
@@ -153,6 +239,1153 @@ export interface CreateManagedRealtimeWebhookResponse {
   sync: ManagedRealtimeSync;
 }
 
+/** Request object (first seen in createManagedStreamBinding body). */
+export interface CreateManagedStreamBindingBody {
+  targetProjectId: string;
+  playbackKeyId?: string;
+  channelId?: string;
+  clientPrefix?: "" | "none" | "NEXT_PUBLIC_" | "VITE_" | "PUBLIC_";
+}
+
+/** Object (first seen in createManagedStreamBinding response). */
+export interface CreateManagedStreamBindingResponse {
+  id: string;
+  instanceId: string;
+  targetProjectId: string;
+  targetProjectName: string;
+  playbackKeyId: string | null;
+  channelId: string | null;
+  clientPrefix: "none" | "NEXT_PUBLIC_" | "VITE_" | "PUBLIC_";
+  envKeys: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Request object (first seen in createManagedStreamChannel body.access). */
+export interface CreateManagedStreamChannelAccessInput {
+  mode: "token" | "public";
+  allowedOrigins: string[];
+  allowedCidrs: string[];
+}
+
+/** Request object (first seen in createManagedStreamChannel body.backup). */
+export interface CreateManagedStreamChannelBackupInput {
+  type: "input" | "mixer" | "playlist";
+  ref: string;
+}
+
+/** Request object (first seen in createManagedStreamChannel body). */
+export interface CreateManagedStreamChannelBody {
+  source?: CreateManagedStreamChannelSourceInput;
+  access?: CreateManagedStreamChannelAccessInput;
+  backup?: CreateManagedStreamChannelBackupInput | null;
+  recording?: CreateManagedStreamChannelRecordingInput;
+  playback?: CreateManagedStreamChannelPlaybackInput;
+  failover?: CreateManagedStreamChannelFailoverInput;
+  encoding?: CreateManagedStreamChannelEncodingInput;
+  latency?: "low" | "standard" | "ultra";
+  dvrMinutes?: number;
+  maxViewers?: number;
+  name: string;
+  enabled?: boolean;
+  position?: number;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel). */
+export interface CreateManagedStreamChannelChannel {
+  id: string;
+  name: string;
+  enabled: boolean;
+  source: CreateManagedStreamChannelChannelSource;
+  access: CreateManagedStreamChannelChannelAccess;
+  backup: CreateManagedStreamChannelChannelBackup | null;
+  recording: CreateManagedStreamChannelChannelRecording;
+  failover: CreateManagedStreamChannelChannelFailover;
+  encoding: CreateManagedStreamChannelChannelEncoding;
+  latency: "low" | "standard" | "ultra";
+  dvrMinutes: number;
+  maxViewers: number;
+  createdAt: string;
+  updatedAt: string;
+  revision: number;
+  position: number;
+  processingMbps: number;
+  playback: CreateManagedStreamChannelChannelPlayback;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.access). */
+export interface CreateManagedStreamChannelChannelAccess {
+  mode: "token" | "public";
+  allowedOrigins: string[];
+  allowedCidrs: string[];
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.backup). */
+export interface CreateManagedStreamChannelChannelBackup {
+  type: "input" | "mixer" | "playlist";
+  ref: string;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.encoding). */
+export interface CreateManagedStreamChannelChannelEncoding {
+  mode: "passthrough" | "ladder";
+  includeSource: boolean;
+  renditions: CreateManagedStreamChannelChannelEncodingRendition[];
+  audioOutputs: CreateManagedStreamChannelChannelEncodingAudioOutput[];
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.encoding.audioOutputs.audioOutput). */
+export interface CreateManagedStreamChannelChannelEncodingAudioOutput {
+  name: string;
+  codec: "aac" | "mp3" | "opus";
+  bitrateKbps: number;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.encoding.renditions.rendition). */
+export interface CreateManagedStreamChannelChannelEncodingRendition {
+  name: string;
+  codec: "h264";
+  width: number;
+  height: number;
+  fps: number;
+  videoBitrateKbps: number;
+  audioBitrateKbps: number;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.failover). */
+export interface CreateManagedStreamChannelChannelFailover {
+  afterMs: number;
+  slate: string | null;
+  returnToPrimary: boolean;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.playback). */
+export interface CreateManagedStreamChannelChannelPlayback {
+  hls: boolean;
+  llHls: boolean;
+  webrtc: boolean;
+  icecast: CreateManagedStreamChannelChannelPlaybackIcecastItem[];
+  rtmpPull: boolean;
+  srtPull: boolean;
+  urls: CreateManagedStreamChannelChannelPlaybackUrls | null;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.playback.icecast.icecastItem). */
+export interface CreateManagedStreamChannelChannelPlaybackIcecastItem {
+  format: "aac" | "mp3" | "opus";
+  bitrateKbps: number;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.playback.urls). */
+export interface CreateManagedStreamChannelChannelPlaybackUrls {
+  hls: string;
+  whep: string;
+  embed: string;
+  thumb: string;
+  status: string;
+  audio: CreateManagedStreamChannelChannelPlaybackUrlsAudioItem[];
+  rtmpPull?: string;
+  srtPull?: string;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.playback.urls.audio.audioItem). */
+export interface CreateManagedStreamChannelChannelPlaybackUrlsAudioItem {
+  format: "aac" | "mp3" | "opus";
+  url: string;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.recording). */
+export interface CreateManagedStreamChannelChannelRecording {
+  enabled: boolean;
+  storageLink: string;
+  prefix: string;
+  splitMinutes: number;
+  registerAsset: boolean;
+}
+
+/** Object (first seen in createManagedStreamChannel response.channel.source). */
+export interface CreateManagedStreamChannelChannelSource {
+  type: "input" | "mixer" | "playlist";
+  ref: string;
+}
+
+/** Request object (first seen in createManagedStreamChannel body.encoding.audioOutputs.audioOutput). */
+export interface CreateManagedStreamChannelEncodingAudioOutputInput {
+  name: string;
+  codec: "aac" | "mp3" | "opus";
+  bitrateKbps: number;
+}
+
+/** Request object (first seen in createManagedStreamChannel body.encoding). */
+export interface CreateManagedStreamChannelEncodingInput {
+  mode: "passthrough" | "ladder";
+  includeSource: boolean;
+  renditions: CreateManagedStreamChannelEncodingRenditionInput[];
+  audioOutputs: CreateManagedStreamChannelEncodingAudioOutputInput[];
+}
+
+/** Request object (first seen in createManagedStreamChannel body.encoding.renditions.rendition). */
+export interface CreateManagedStreamChannelEncodingRenditionInput {
+  name: string;
+  codec: "h264";
+  width: number;
+  height: number;
+  fps: number;
+  videoBitrateKbps: number;
+  audioBitrateKbps: number;
+}
+
+/** Request object (first seen in createManagedStreamChannel body.failover). */
+export interface CreateManagedStreamChannelFailoverInput {
+  afterMs: number;
+  slate: string | null;
+  returnToPrimary: boolean;
+}
+
+/** Request object (first seen in createManagedStreamChannel body.playback.icecast.icecastItem). */
+export interface CreateManagedStreamChannelPlaybackIcecastItemInput {
+  format: "aac" | "mp3" | "opus";
+  bitrateKbps: number;
+}
+
+/** Request object (first seen in createManagedStreamChannel body.playback). */
+export interface CreateManagedStreamChannelPlaybackInput {
+  hls: boolean;
+  llHls: boolean;
+  webrtc: boolean;
+  icecast: CreateManagedStreamChannelPlaybackIcecastItemInput[];
+  rtmpPull: boolean;
+  srtPull: boolean;
+}
+
+/** Request object (first seen in createManagedStreamChannel body.recording). */
+export interface CreateManagedStreamChannelRecordingInput {
+  enabled: boolean;
+  storageLink: string;
+  prefix: string;
+  splitMinutes: number;
+  registerAsset: boolean;
+}
+
+/** Object (first seen in createManagedStreamChannel response). */
+export interface CreateManagedStreamChannelResponse {
+  channel: CreateManagedStreamChannelChannel;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in createManagedStreamChannel body.source). */
+export interface CreateManagedStreamChannelSourceInput {
+  type: "input" | "mixer" | "playlist";
+  ref: string;
+}
+
+/** Object (first seen in createManagedStreamChannel response.sync). */
+export interface CreateManagedStreamChannelSync {
+  status: "pending" | "applied";
+  generation: number;
+  error: string | null;
+  warnings: CreateManagedStreamChannelSyncWarning[];
+}
+
+/** Object (first seen in createManagedStreamChannel response.sync.warnings.warning). */
+export interface CreateManagedStreamChannelSyncWarning {
+  path: string;
+  code: string;
+  message: string;
+}
+
+/** Request object (first seen in createManagedStreamClip body). */
+export interface CreateManagedStreamClipBody {
+  channelId: string;
+  from: string;
+  to: string;
+  name: string;
+  storageLinkId?: string;
+}
+
+/** Object (first seen in createManagedStreamClip response). */
+export interface CreateManagedStreamClipResponse {
+  clipId: string;
+}
+
+/** Request object (first seen in createManagedStreamDestination body). */
+export interface CreateManagedStreamDestinationBody {
+  source?: CreateManagedStreamDestinationSourceInput;
+  protocol?: "rtmp" | "rtmps" | "srt";
+  url?: string;
+  rendition?: string;
+  autoStart?: boolean;
+  name: string;
+  enabled?: boolean;
+  platform: "custom" | "youtube" | "twitch" | "facebook" | "kick" | "x" | "linkedin";
+  streamKey: string;
+  srtPassphrase?: string | null;
+}
+
+/** Object (first seen in createManagedStreamDestination response.destination). */
+export interface CreateManagedStreamDestinationDestination {
+  id: string;
+  name: string;
+  platform: "custom" | "youtube" | "twitch" | "facebook" | "kick" | "x" | "linkedin";
+  enabled: boolean;
+  source: CreateManagedStreamDestinationDestinationSource;
+  protocol: "rtmp" | "rtmps" | "srt";
+  url: string;
+  rendition: string;
+  autoStart: boolean;
+  createdAt: string;
+  updatedAt: string;
+  revision: number;
+  streamKeyHint: string | null;
+  hasSrtPassphrase: boolean;
+}
+
+/** Object (first seen in createManagedStreamDestination response.destination.source). */
+export interface CreateManagedStreamDestinationDestinationSource {
+  type: "input" | "channel";
+  ref: string;
+}
+
+/** Object (first seen in createManagedStreamDestination response). */
+export interface CreateManagedStreamDestinationResponse {
+  destination: CreateManagedStreamDestinationDestination;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in createManagedStreamDestination body.source). */
+export interface CreateManagedStreamDestinationSourceInput {
+  type: "input" | "channel";
+  ref: string;
+}
+
+/** Request object (first seen in createManagedStreamDomain body). */
+export interface CreateManagedStreamDomainBody {
+  hostname: string;
+  purpose?: "both" | "playback" | "ingest";
+}
+
+/** Object (first seen in createManagedStreamDomain response.domain). */
+export interface CreateManagedStreamDomainDomain {
+  id: string;
+  hostname: string;
+  purpose: "both" | "playback" | "ingest";
+  verified: boolean;
+  verifiedAt: string | null;
+  lastCheckAt: string | null;
+  lastCheckError: string | null;
+  failedChecks: number;
+  cnameTarget: string;
+  revision: number;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Object (first seen in createManagedStreamDomain response). */
+export interface CreateManagedStreamDomainResponse {
+  domain: CreateManagedStreamDomainDomain;
+  cnameTarget: string;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in createManagedStreamInput body). */
+export interface CreateManagedStreamInputBody {
+  name: string;
+  kind: "push" | "pull";
+  enabled?: boolean;
+  protocols?: Array<"rtmp" | "rtmps" | "srt" | "whip" | "icecast">;
+  backupKey?: boolean;
+  srtPassphrase?: string | null;
+  pull?: CreateManagedStreamInputPullInput | null;
+  maxBitrateKbps?: number;
+  allowedCidrs?: string[];
+}
+
+/** Object (first seen in createManagedStreamInput response.input). */
+export interface CreateManagedStreamInputInput {
+  id: string;
+  name: string;
+  kind: "push" | "pull";
+  enabled: boolean;
+  protocols: Array<"rtmp" | "rtmps" | "srt" | "whip" | "icecast">;
+  maxBitrateKbps: number;
+  allowedCidrs: string[];
+  createdAt: string;
+  updatedAt: string;
+  revision: number;
+  keyHints: CreateManagedStreamInputInputKeyHints;
+  keyFingerprints: CreateManagedStreamInputInputKeyHints;
+  hasSrtPassphrase: boolean;
+  pull: CreateManagedStreamInputInputPull | null;
+  connection: CreateManagedStreamInputInputConnection | null;
+}
+
+/** Object (first seen in createManagedStreamInput response.input.connection). */
+export interface CreateManagedStreamInputInputConnection {
+  rtmp: CreateManagedStreamInputInputConnectionRtmp;
+  rtmps: CreateManagedStreamInputInputConnectionRtmp;
+  srt: CreateManagedStreamInputInputConnectionSrt;
+  whip: CreateManagedStreamInputInputConnectionWhip;
+  icecast: CreateManagedStreamInputInputConnectionIcecast;
+}
+
+/** Object (first seen in createManagedStreamInput response.input.connection.icecast). */
+export interface CreateManagedStreamInputInputConnectionIcecast {
+  url: string;
+  host: string;
+  port: number;
+  mount: string;
+  username: string;
+  password: string;
+  httpsPutUrl: string;
+}
+
+/** Object (first seen in createManagedStreamInput response.input.connection.rtmp). */
+export interface CreateManagedStreamInputInputConnectionRtmp {
+  server: string;
+  streamKey: string;
+  url: string;
+}
+
+/** Object (first seen in createManagedStreamInput response.input.connection.srt). */
+export interface CreateManagedStreamInputInputConnectionSrt {
+  url: string;
+  uri: string;
+  streamId: string;
+  passphrase: string | null;
+}
+
+/** Object (first seen in createManagedStreamInput response.input.connection.whip). */
+export interface CreateManagedStreamInputInputConnectionWhip {
+  url: string;
+  bearerToken: string;
+}
+
+/** Object (first seen in createManagedStreamInput response.input.keyHints). */
+export interface CreateManagedStreamInputInputKeyHints {
+  primary?: string;
+  backup?: string;
+}
+
+/** Object (first seen in createManagedStreamInput response.input.pull). */
+export interface CreateManagedStreamInputInputPull {
+  urlHint: string;
+  transport: "auto" | "tcp" | "udp";
+  reconnect: boolean;
+}
+
+/** Object (first seen in createManagedStreamInput response.keys). */
+export interface CreateManagedStreamInputKeys {
+  primary: string;
+  backup?: string;
+}
+
+/** Request object (first seen in createManagedStreamInput body.pull). */
+export interface CreateManagedStreamInputPullInput {
+  url: string;
+  transport?: "auto" | "tcp" | "udp";
+  reconnect?: boolean;
+}
+
+/** Object (first seen in createManagedStreamInput response). */
+export interface CreateManagedStreamInputResponse {
+  input: CreateManagedStreamInputInput;
+  keys: CreateManagedStreamInputKeys | null;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in createManagedStreamMixer body). */
+export interface CreateManagedStreamMixerBody {
+  output?: CreateManagedStreamMixerOutputInput;
+  canvas?: CreateManagedStreamMixerCanvasInput;
+  sources?: CreateManagedStreamMixerSourceInput[];
+  scenes?: CreateManagedStreamMixerSceneInput[];
+  defaultScene?: string;
+  transition?: CreateManagedStreamMixerTransitionInput;
+  name: string;
+  enabled?: boolean;
+  preset?: "vertical" | "1080p30" | "1080p60" | "720p30";
+}
+
+/** Request object (first seen in createManagedStreamMixer body.canvas). */
+export interface CreateManagedStreamMixerCanvasInput {
+  width: number;
+  height: number;
+  fps: number;
+  background: string;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer). */
+export interface CreateManagedStreamMixerMixer {
+  id: string;
+  name: string;
+  enabled: boolean;
+  canvas: CreateManagedStreamMixerMixerCanvas;
+  output: CreateManagedStreamMixerMixerOutput;
+  sources: CreateManagedStreamMixerMixerSource[];
+  scenes: CreateManagedStreamMixerMixerScene[];
+  defaultScene: string;
+  transition: CreateManagedStreamMixerMixerTransition;
+  createdAt: string;
+  updatedAt: string;
+  revision: number;
+  processingMbps: number;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.canvas). */
+export interface CreateManagedStreamMixerMixerCanvas {
+  width: number;
+  height: number;
+  fps: number;
+  background: string;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.output). */
+export interface CreateManagedStreamMixerMixerOutput {
+  codec: "h264";
+  videoBitrateKbps: number;
+  audioBitrateKbps: number;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.scenes.scene). */
+export interface CreateManagedStreamMixerMixerScene {
+  id: string;
+  name: string;
+  layers: CreateManagedStreamMixerMixerSceneLayer[];
+  audio: CreateManagedStreamMixerMixerSceneAudioItem[];
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.scenes.scene.audio.audioItem). */
+export interface CreateManagedStreamMixerMixerSceneAudioItem {
+  source: string;
+  gainDb: number;
+  muted: boolean;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.scenes.scene.layers.layer). */
+export interface CreateManagedStreamMixerMixerSceneLayer {
+  source: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  crop: CreateManagedStreamMixerMixerSceneLayerCrop;
+  z: number;
+  opacity: number;
+  visible: boolean;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.scenes.scene.layers.layer.crop). */
+export interface CreateManagedStreamMixerMixerSceneLayerCrop {
+  l: number;
+  t: number;
+  r: number;
+  b: number;
+}
+
+/** One of CreateManagedStreamMixerMixerSourceInput, CreateManagedStreamMixerMixerSourcePlaylist, CreateManagedStreamMixerMixerSourceImage, CreateManagedStreamMixerMixerSourceSvg, CreateManagedStreamMixerMixerSourceHtml, CreateManagedStreamMixerMixerSourceText, CreateManagedStreamMixerMixerSourceClock, CreateManagedStreamMixerMixerSourceColor (first seen in createManagedStreamMixer response.mixer.sources.source). */
+export type CreateManagedStreamMixerMixerSource = CreateManagedStreamMixerMixerSourceInput | CreateManagedStreamMixerMixerSourcePlaylist | CreateManagedStreamMixerMixerSourceImage | CreateManagedStreamMixerMixerSourceSvg | CreateManagedStreamMixerMixerSourceHtml | CreateManagedStreamMixerMixerSourceText | CreateManagedStreamMixerMixerSourceClock | CreateManagedStreamMixerMixerSourceColor;
+
+/** Object (first seen in createManagedStreamMixer response.mixer.sources.source). */
+export interface CreateManagedStreamMixerMixerSourceClock {
+  id: string;
+  type: "clock";
+  format: string;
+  timezone?: string | null;
+  font?: string;
+  size?: number;
+  color?: string;
+  background?: string;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.sources.source). */
+export interface CreateManagedStreamMixerMixerSourceColor {
+  id: string;
+  type: "color";
+  color: string;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.sources.source). */
+export interface CreateManagedStreamMixerMixerSourceHtml {
+  id: string;
+  type: "html";
+  ref: string;
+  width?: number;
+  height?: number;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.sources.source). */
+export interface CreateManagedStreamMixerMixerSourceImage {
+  id: string;
+  type: "image";
+  ref: string;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.sources.source). */
+export interface CreateManagedStreamMixerMixerSourceInput {
+  id: string;
+  type: "input";
+  ref: string;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.sources.source). */
+export interface CreateManagedStreamMixerMixerSourcePlaylist {
+  id: string;
+  type: "playlist";
+  ref: string;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.sources.source). */
+export interface CreateManagedStreamMixerMixerSourceSvg {
+  id: string;
+  type: "svg";
+  ref: string;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.sources.source). */
+export interface CreateManagedStreamMixerMixerSourceText {
+  id: string;
+  type: "text";
+  text: string;
+  font?: string;
+  size?: number;
+  color?: string;
+  background?: string;
+}
+
+/** Object (first seen in createManagedStreamMixer response.mixer.transition). */
+export interface CreateManagedStreamMixerMixerTransition {
+  type: "cut" | "fade";
+  durationMs: number;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.output). */
+export interface CreateManagedStreamMixerOutputInput {
+  codec: "h264";
+  videoBitrateKbps: number;
+  audioBitrateKbps: number;
+}
+
+/** Object (first seen in createManagedStreamMixer response). */
+export interface CreateManagedStreamMixerResponse {
+  mixer: CreateManagedStreamMixerMixer;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.scenes.scene.audio.audioItem). */
+export interface CreateManagedStreamMixerSceneAudioItemInput {
+  source: string;
+  gainDb: number;
+  muted: boolean;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.scenes.scene). */
+export interface CreateManagedStreamMixerSceneInput {
+  id: string;
+  name: string;
+  layers: CreateManagedStreamMixerSceneLayerInput[];
+  audio: CreateManagedStreamMixerSceneAudioItemInput[];
+}
+
+/** Request object (first seen in createManagedStreamMixer body.scenes.scene.layers.layer.crop). */
+export interface CreateManagedStreamMixerSceneLayerCropInput {
+  l: number;
+  t: number;
+  r: number;
+  b: number;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.scenes.scene.layers.layer). */
+export interface CreateManagedStreamMixerSceneLayerInput {
+  source: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  crop: CreateManagedStreamMixerSceneLayerCropInput;
+  z: number;
+  opacity: number;
+  visible: boolean;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.sources.source). */
+export interface CreateManagedStreamMixerSourceClockInput {
+  id: string;
+  type: "clock";
+  format: string;
+  timezone?: string | null;
+  font?: string;
+  size?: number;
+  color?: string;
+  background?: string;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.sources.source). */
+export interface CreateManagedStreamMixerSourceColorInput {
+  id: string;
+  type: "color";
+  color: string;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.sources.source). */
+export interface CreateManagedStreamMixerSourceHtmlInput {
+  id: string;
+  type: "html";
+  ref: string;
+  width?: number;
+  height?: number;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.sources.source). */
+export interface CreateManagedStreamMixerSourceImageInput {
+  id: string;
+  type: "image";
+  ref: string;
+}
+
+/** One of CreateManagedStreamMixerSourceInputInput, CreateManagedStreamMixerSourcePlaylistInput, CreateManagedStreamMixerSourceImageInput, CreateManagedStreamMixerSourceSvgInput, CreateManagedStreamMixerSourceHtmlInput, CreateManagedStreamMixerSourceTextInput, CreateManagedStreamMixerSourceClockInput, CreateManagedStreamMixerSourceColorInput (first seen in createManagedStreamMixer body.sources.source). */
+export type CreateManagedStreamMixerSourceInput = CreateManagedStreamMixerSourceInputInput | CreateManagedStreamMixerSourcePlaylistInput | CreateManagedStreamMixerSourceImageInput | CreateManagedStreamMixerSourceSvgInput | CreateManagedStreamMixerSourceHtmlInput | CreateManagedStreamMixerSourceTextInput | CreateManagedStreamMixerSourceClockInput | CreateManagedStreamMixerSourceColorInput;
+
+/** Request object (first seen in createManagedStreamMixer body.sources.source). */
+export interface CreateManagedStreamMixerSourceInputInput {
+  id: string;
+  type: "input";
+  ref: string;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.sources.source). */
+export interface CreateManagedStreamMixerSourcePlaylistInput {
+  id: string;
+  type: "playlist";
+  ref: string;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.sources.source). */
+export interface CreateManagedStreamMixerSourceSvgInput {
+  id: string;
+  type: "svg";
+  ref: string;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.sources.source). */
+export interface CreateManagedStreamMixerSourceTextInput {
+  id: string;
+  type: "text";
+  text: string;
+  font?: string;
+  size?: number;
+  color?: string;
+  background?: string;
+}
+
+/** Request object (first seen in createManagedStreamMixer body.transition). */
+export interface CreateManagedStreamMixerTransitionInput {
+  type: "cut" | "fade";
+  durationMs: number;
+}
+
+/** Request object (first seen in createManagedStreamPlaybackKey body). */
+export interface CreateManagedStreamPlaybackKeyBody {
+  name: string;
+}
+
+/** Object (first seen in createManagedStreamPlaybackKey response.key). */
+export interface CreateManagedStreamPlaybackKeyKey {
+  id: string;
+  name: string;
+  status: "active" | "retiring";
+  fingerprint: string;
+  retiringUntil: string | null;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Object (first seen in createManagedStreamPlaybackKey response). */
+export interface CreateManagedStreamPlaybackKeyResponse {
+  key: CreateManagedStreamPlaybackKeyKey;
+  secret: string;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in createManagedStreamPlaybackToken body). */
+export interface CreateManagedStreamPlaybackTokenBody {
+  ttlSeconds: number;
+  sub?: string;
+  ip?: string;
+}
+
+/** Object (first seen in createManagedStreamPlaybackToken response). */
+export interface CreateManagedStreamPlaybackTokenResponse {
+  token: string;
+  expiresAt: string;
+}
+
+/** Request object (first seen in createManagedStreamPlaylist body). */
+export interface CreateManagedStreamPlaylistBody {
+  name: string;
+  loop?: boolean;
+  shuffle?: boolean;
+  encoding?: "auto" | "reencode";
+  items?: CreateManagedStreamPlaylistItemInput[];
+}
+
+/** Request object (first seen in createManagedStreamPlaylist body.items.item). */
+export interface CreateManagedStreamPlaylistItemInput {
+  storageLinkId?: string;
+  objectKey?: string;
+  assetId?: string;
+  url?: string;
+  media?: "file" | "hls";
+  inMs?: number;
+  outMs?: number | null;
+  title?: string;
+}
+
+/** Object (first seen in createManagedStreamPlaylist response.playlist). */
+export interface CreateManagedStreamPlaylistPlaylist {
+  id: string;
+  name: string;
+  loop: boolean;
+  shuffle: boolean;
+  encoding: "auto" | "reencode";
+  items: CreateManagedStreamPlaylistPlaylistItem[];
+  revision: number;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One of CreateManagedStreamPlaylistPlaylistItemStorage, CreateManagedStreamPlaylistPlaylistItemUrl (first seen in createManagedStreamPlaylist response.playlist.items.item). */
+export type CreateManagedStreamPlaylistPlaylistItem = CreateManagedStreamPlaylistPlaylistItemStorage | CreateManagedStreamPlaylistPlaylistItemUrl;
+
+/** Object (first seen in createManagedStreamPlaylist response.playlist.items.item). */
+export interface CreateManagedStreamPlaylistPlaylistItemStorage {
+  type: "storage";
+  storageLink: string;
+  objectKey: string;
+  media: "file" | "hls";
+  inMs: number;
+  outMs: number | null;
+  title: string;
+}
+
+/** Object (first seen in createManagedStreamPlaylist response.playlist.items.item). */
+export interface CreateManagedStreamPlaylistPlaylistItemUrl {
+  type: "url";
+  url: string;
+  media: "file" | "hls";
+  inMs: number;
+  outMs: number | null;
+  title: string;
+}
+
+/** Object (first seen in createManagedStreamPlaylist response). */
+export interface CreateManagedStreamPlaylistResponse {
+  playlist: CreateManagedStreamPlaylistPlaylist;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body). */
+export interface CreateManagedStreamScheduleBody {
+  name: string;
+  enabled?: boolean;
+  timezone: string;
+  start: string;
+  rrule?: string | null;
+  durationMinutes: number;
+  onStart?: CreateManagedStreamScheduleOnStartItemInput[];
+  onEnd?: CreateManagedStreamScheduleOnStartItemInput[];
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemChannelSlateInput {
+  op: "channel.slate";
+  channel: string;
+  on: boolean;
+  slate?: string;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemChannelSourceInput {
+  op: "channel.source";
+  channel: string;
+  source: CreateManagedStreamChannelSourceInput;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemGraphicsSetInput {
+  op: "graphics.set";
+  graphic: string;
+  variables: Record<string, string>;
+}
+
+/** One of CreateManagedStreamScheduleOnStartItemMixerSceneInput, CreateManagedStreamScheduleOnStartItemMixerLayerInput, CreateManagedStreamScheduleOnStartItemMixerAudioInput, CreateManagedStreamScheduleOnStartItemMixerTextInput, CreateManagedStreamScheduleOnStartItemGraphicsSetInput, CreateManagedStreamScheduleOnStartItemVariant6Input, CreateManagedStreamScheduleOnStartItemChannelSourceInput, CreateManagedStreamScheduleOnStartItemChannelSlateInput, CreateManagedStreamScheduleOnStartItemVariant9Input, CreateManagedStreamScheduleOnStartItemVariant10Input, CreateManagedStreamScheduleOnStartItemPlaylistPlayInput, CreateManagedStreamScheduleOnStartItemPlaylistNextInput (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export type CreateManagedStreamScheduleOnStartItemInput = CreateManagedStreamScheduleOnStartItemMixerSceneInput | CreateManagedStreamScheduleOnStartItemMixerLayerInput | CreateManagedStreamScheduleOnStartItemMixerAudioInput | CreateManagedStreamScheduleOnStartItemMixerTextInput | CreateManagedStreamScheduleOnStartItemGraphicsSetInput | CreateManagedStreamScheduleOnStartItemVariant6Input | CreateManagedStreamScheduleOnStartItemChannelSourceInput | CreateManagedStreamScheduleOnStartItemChannelSlateInput | CreateManagedStreamScheduleOnStartItemVariant9Input | CreateManagedStreamScheduleOnStartItemVariant10Input | CreateManagedStreamScheduleOnStartItemPlaylistPlayInput | CreateManagedStreamScheduleOnStartItemPlaylistNextInput;
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemMixerAudioInput {
+  op: "mixer.audio";
+  mixer: string;
+  source: string;
+  gainDb?: number;
+  muted?: boolean;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemMixerLayerInput {
+  op: "mixer.layer";
+  mixer: string;
+  source: string;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  crop?: CreateManagedStreamMixerSceneLayerCropInput;
+  z?: number;
+  opacity?: number;
+  visible?: boolean;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemMixerSceneInput {
+  op: "mixer.scene";
+  mixer: string;
+  scene: string;
+  transition?: CreateManagedStreamMixerTransitionInput;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemMixerTextInput {
+  op: "mixer.text";
+  mixer: string;
+  source: string;
+  text: string;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemPlaylistNextInput {
+  op: "playlist.next";
+  channel: string;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemPlaylistPlayInput {
+  op: "playlist.play";
+  channel: string;
+  playlist: string;
+  item?: number;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemVariant10Input {
+  op: "recording.start" | "recording.stop";
+  channel: string;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemVariant6Input {
+  op: "channel.start" | "channel.stop";
+  channel: string;
+}
+
+/** Request object (first seen in createManagedStreamSchedule body.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleOnStartItemVariant9Input {
+  op: "destination.start" | "destination.stop";
+  destination: string;
+}
+
+/** Object (first seen in createManagedStreamSchedule response). */
+export interface CreateManagedStreamScheduleResponse {
+  schedule: CreateManagedStreamScheduleSchedule;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule). */
+export interface CreateManagedStreamScheduleSchedule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  timezone: string;
+  start: string;
+  rrule: string;
+  durationMinutes: number;
+  onStart: CreateManagedStreamScheduleScheduleOnStartItem[];
+  onEnd: CreateManagedStreamScheduleScheduleOnStartItem[];
+  nextStartAt: string | null;
+  upcoming: string[];
+  revision: number;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** One of CreateManagedStreamScheduleScheduleOnStartItemMixerScene, CreateManagedStreamScheduleScheduleOnStartItemMixerLayer, CreateManagedStreamScheduleScheduleOnStartItemMixerAudio, CreateManagedStreamScheduleScheduleOnStartItemMixerText, CreateManagedStreamScheduleScheduleOnStartItemGraphicsSet, CreateManagedStreamScheduleScheduleOnStartItemVariant6, CreateManagedStreamScheduleScheduleOnStartItemChannelSource, CreateManagedStreamScheduleScheduleOnStartItemChannelSlate, CreateManagedStreamScheduleScheduleOnStartItemVariant9, CreateManagedStreamScheduleScheduleOnStartItemVariant10, CreateManagedStreamScheduleScheduleOnStartItemPlaylistPlay, CreateManagedStreamScheduleScheduleOnStartItemPlaylistNext (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export type CreateManagedStreamScheduleScheduleOnStartItem = CreateManagedStreamScheduleScheduleOnStartItemMixerScene | CreateManagedStreamScheduleScheduleOnStartItemMixerLayer | CreateManagedStreamScheduleScheduleOnStartItemMixerAudio | CreateManagedStreamScheduleScheduleOnStartItemMixerText | CreateManagedStreamScheduleScheduleOnStartItemGraphicsSet | CreateManagedStreamScheduleScheduleOnStartItemVariant6 | CreateManagedStreamScheduleScheduleOnStartItemChannelSource | CreateManagedStreamScheduleScheduleOnStartItemChannelSlate | CreateManagedStreamScheduleScheduleOnStartItemVariant9 | CreateManagedStreamScheduleScheduleOnStartItemVariant10 | CreateManagedStreamScheduleScheduleOnStartItemPlaylistPlay | CreateManagedStreamScheduleScheduleOnStartItemPlaylistNext;
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemChannelSlate {
+  op: "channel.slate";
+  channel: string;
+  on: boolean;
+  slate?: string;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemChannelSource {
+  op: "channel.source";
+  channel: string;
+  source: CreateManagedStreamChannelChannelSource;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemGraphicsSet {
+  op: "graphics.set";
+  graphic: string;
+  variables: Record<string, string>;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemMixerAudio {
+  op: "mixer.audio";
+  mixer: string;
+  source: string;
+  gainDb?: number;
+  muted?: boolean;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemMixerLayer {
+  op: "mixer.layer";
+  mixer: string;
+  source: string;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  crop?: CreateManagedStreamMixerMixerSceneLayerCrop;
+  z?: number;
+  opacity?: number;
+  visible?: boolean;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemMixerScene {
+  op: "mixer.scene";
+  mixer: string;
+  scene: string;
+  transition?: CreateManagedStreamMixerMixerTransition;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemMixerText {
+  op: "mixer.text";
+  mixer: string;
+  source: string;
+  text: string;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemPlaylistNext {
+  op: "playlist.next";
+  channel: string;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemPlaylistPlay {
+  op: "playlist.play";
+  channel: string;
+  playlist: string;
+  item?: number;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemVariant10 {
+  op: "recording.start" | "recording.stop";
+  channel: string;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemVariant6 {
+  op: "channel.start" | "channel.stop";
+  channel: string;
+}
+
+/** Object (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem). */
+export interface CreateManagedStreamScheduleScheduleOnStartItemVariant9 {
+  op: "destination.start" | "destination.stop";
+  destination: string;
+}
+
+/** Request object (first seen in createManagedStreamStorageLink body). */
+export interface CreateManagedStreamStorageLinkBody {
+  storageProjectId: string;
+  bucket: string;
+  mode: "read" | "write" | "read_write";
+}
+
+/** Object (first seen in createManagedStreamStorageLink response). */
+export interface CreateManagedStreamStorageLinkResponse {
+  storageLink: CreateManagedStreamStorageLinkStorageLink;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Object (first seen in createManagedStreamStorageLink response.storageLink). */
+export interface CreateManagedStreamStorageLinkStorageLink {
+  id: string;
+  storageProjectId: string;
+  bucket: string;
+  mode: "read" | "write" | "read_write";
+  endpoint: string;
+  region: string;
+  accessKeyId: string;
+  storageKeyId: string | null;
+  revision: number;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Request object (first seen in createManagedStreamStudioToken body). */
+export interface CreateManagedStreamStudioTokenBody {
+  origin?: string;
+}
+
+/** Object (first seen in createManagedStreamStudioToken response). */
+export interface CreateManagedStreamStudioTokenResponse {
+  token: string;
+  url: string;
+  expiresAt: string;
+  scopes: Array<"read" | "preview" | "operate">;
+}
+
+/** Request object (first seen in createManagedStreamWebhook body). */
+export interface CreateManagedStreamWebhookBody {
+  url: string;
+  events?: string[];
+  enabled?: boolean;
+}
+
+/** Object (first seen in createManagedStreamWebhook response). */
+export interface CreateManagedStreamWebhookResponse {
+  webhook: CreateManagedStreamWebhookWebhook;
+  secret: string;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Object (first seen in createManagedStreamWebhook response.webhook). */
+export interface CreateManagedStreamWebhookWebhook {
+  id: string;
+  url: string;
+  events: string[];
+  enabled: boolean;
+  fingerprint: string;
+  revision: number;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Object (first seen in deleteManagedInstanceBinding response). */
 export interface DeleteManagedInstanceBindingResponse {
   deleted: true;
@@ -200,6 +1433,55 @@ export interface DeleteManagedRealtimeWebhookResponse {
   sync: ManagedRealtimeSync;
 }
 
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/:bindingId/delete (deleteManagedStreamBinding). */
+export type DeleteManagedStreamBindingResponse = DeleteManagedRealtimeBindingResponse;
+
+/** Object (first seen in deleteManagedStreamChannel response). */
+export interface DeleteManagedStreamChannelResponse {
+  deleted: true;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/delete (deleteManagedStreamDestination). */
+export type DeleteManagedStreamDestinationResponse = DeleteManagedStreamChannelResponse;
+
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/:domainId/delete (deleteManagedStreamDomain). */
+export type DeleteManagedStreamDomainResponse = DeleteManagedStreamChannelResponse;
+
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/:graphicId/delete (deleteManagedStreamGraphic). */
+export type DeleteManagedStreamGraphicResponse = DeleteManagedStreamChannelResponse;
+
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/delete (deleteManagedStreamInput). */
+export type DeleteManagedStreamInputResponse = DeleteManagedStreamChannelResponse;
+
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/delete (deleteManagedStreamMixer). */
+export type DeleteManagedStreamMixerResponse = DeleteManagedStreamChannelResponse;
+
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/:keyId/delete (deleteManagedStreamPlaybackKey). */
+export type DeleteManagedStreamPlaybackKeyResponse = DeleteManagedStreamChannelResponse;
+
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/delete (deleteManagedStreamPlaylist). */
+export type DeleteManagedStreamPlaylistResponse = DeleteManagedStreamChannelResponse;
+
+/** Object (first seen in deleteManagedStreamRecording response). */
+export interface DeleteManagedStreamRecordingResponse {
+  deleted: true;
+  objectDeleted: boolean;
+}
+
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/delete (deleteManagedStreamSchedule). */
+export type DeleteManagedStreamScheduleResponse = DeleteManagedStreamChannelResponse;
+
+/** Object (first seen in deleteManagedStreamStorageLink response). */
+export interface DeleteManagedStreamStorageLinkResponse {
+  deleted: true;
+  keyRevoked: boolean;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/delete (deleteManagedStreamWebhook). */
+export type DeleteManagedStreamWebhookResponse = DeleteManagedStreamChannelResponse;
+
 /** Object (first seen in getManagedCatalog response.realtime.engine). */
 export interface GetManagedCatalogRealtimeEngine {
   id: "realtime";
@@ -227,11 +1509,12 @@ export interface GetManagedCatalogResponse {
   maxAllowlistEntries: number;
   maxInstancesPerAccount: number;
   realtime: ManagedCatalogRealtime;
+  streams: GetManagedCatalogStreams;
 }
 
 /** Object (first seen in getManagedCatalog response.services.service). */
 export interface GetManagedCatalogService {
-  id: "database" | "cache" | "realtime";
+  id: "database" | "cache" | "realtime" | "stream";
   label: string;
   description: string;
   status: "available" | "coming_soon";
@@ -266,6 +1549,58 @@ export interface GetManagedCatalogSizesStorageGib {
   min: number;
   max: number;
   default: number;
+}
+
+/** Object (first seen in getManagedCatalog response.streams). */
+export interface GetManagedCatalogStreams {
+  available: boolean;
+  speedPresetsMbps: number[];
+  speedMbps: GetManagedCatalogStreamsSpeedMbps;
+  processingMbps: GetManagedCatalogSizesStorageGib;
+  maxSpeedMbpsWithoutDeposit: number;
+  freeSpeedMbps: number;
+  maxInstancesPerAccount: number;
+  startingPrice: GetManagedCatalogStreamsStartingPrice;
+  pricing: GetManagedCatalogStreamsStartingPricePricing;
+}
+
+/** Object (first seen in getManagedCatalog response.streams.speedMbps). */
+export interface GetManagedCatalogStreamsSpeedMbps {
+  min: number;
+  max: number;
+  step: number;
+  default: number;
+}
+
+/** Object (first seen in getManagedCatalog response.streams.startingPrice). */
+export interface GetManagedCatalogStreamsStartingPrice {
+  hourly: GetManagedCatalogStreamsStartingPriceHourly;
+  monthly: GetManagedCatalogStreamsStartingPriceMonthly;
+  freeSpeedMbps: number;
+  pricing: GetManagedCatalogStreamsStartingPricePricing;
+}
+
+/** Object (first seen in getManagedCatalog response.streams.startingPrice.hourly). */
+export interface GetManagedCatalogStreamsStartingPriceHourly {
+  speedMicroUsd: number;
+  speedMicroUsdAfterFree: number;
+}
+
+/** Object (first seen in getManagedCatalog response.streams.startingPrice.monthly). */
+export interface GetManagedCatalogStreamsStartingPriceMonthly {
+  speedUsd: number;
+  speedUsdAfterFree: number;
+}
+
+/** Object (first seen in getManagedCatalog response.streams.startingPrice.pricing). */
+export interface GetManagedCatalogStreamsStartingPricePricing {
+  version: number;
+  speedMicroUsdPerMbpsHour: number;
+  processingMicroUsdPerMbpsHour: number;
+  bandwidthMicroUsdPerGb: number;
+  freeSpeedMbpsPerHour: number;
+  freeProcessingMbpsHoursPerMonth: number;
+  freeBandwidthGbPerMonth: number;
 }
 
 /** Object (first seen in getManagedClientIp response). */
@@ -604,7 +1939,7 @@ export interface GetManagedInstancesResponse {
 export interface GetManagedInstanceTableRowsColumn {
   name: string;
   type: string;
-  kind: "number" | "boolean" | "json" | "text" | "binary" | "datetime" | "other";
+  kind: "number" | "boolean" | "json" | "other" | "text" | "binary" | "datetime";
   nullable: boolean;
   primaryKey: boolean;
 }
@@ -813,6 +2148,267 @@ export interface GetManagedRealtimeWebhooksResponse {
   items: ManagedRealtimeWebhook[];
 }
 
+/** Object (first seen in getManagedStreamChannelPlayback response). */
+export interface GetManagedStreamChannelPlaybackResponse {
+  urls: GetManagedStreamChannelPlaybackUrls;
+  embedHtml: string;
+  tokenRequired: boolean;
+}
+
+/** Object (first seen in getManagedStreamChannelPlayback response.urls). */
+export interface GetManagedStreamChannelPlaybackUrls {
+  hls: string;
+  whep: string;
+  embed: string;
+  thumb: string;
+  status: string;
+  audio: CreateManagedStreamChannelChannelPlaybackUrlsAudioItem[];
+  rtmpPull?: string;
+  srtPull?: string;
+}
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId (getManagedStreamChannel). */
+export type GetManagedStreamChannelResponse = CreateManagedStreamChannelChannel;
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId (getManagedStreamDestination). */
+export type GetManagedStreamDestinationResponse = CreateManagedStreamDestinationDestination;
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId (getManagedStreamInput). */
+export type GetManagedStreamInputResponse = CreateManagedStreamInputInput;
+
+/** Object (first seen in getManagedStreamLive response.channels.channel). */
+export interface GetManagedStreamLiveChannel {
+  id: string;
+  state: "live" | "disabled" | "starting" | "offline";
+  onAir: boolean;
+  source: CreateManagedStreamChannelChannelBackup | null;
+  onSlate: boolean;
+  viewers: GetManagedStreamLiveChannelViewers;
+  renditions: GetManagedStreamLiveChannelRendition[];
+  recording: GetManagedStreamLiveChannelRecording | null;
+  playlist: GetManagedStreamLiveChannelPlaylist | null;
+}
+
+/** Object (first seen in getManagedStreamLive response.channels.channel.playlist). */
+export interface GetManagedStreamLiveChannelPlaylist {
+  id: string;
+  item: number;
+  title: string;
+}
+
+/** Object (first seen in getManagedStreamLive response.channels.channel.recording). */
+export interface GetManagedStreamLiveChannelRecording {
+  state: "error" | "recording" | "uploading" | "idle";
+  id: string;
+  since: string | null;
+}
+
+/** Object (first seen in getManagedStreamLive response.channels.channel.renditions.rendition). */
+export interface GetManagedStreamLiveChannelRendition {
+  name: string;
+  state: "rejected" | "stopped" | "running" | "waiting" | "error";
+  processingMbps: number;
+  error?: string | null;
+}
+
+/** Object (first seen in getManagedStreamLive response.channels.channel.viewers). */
+export interface GetManagedStreamLiveChannelViewers {
+  hls: number;
+  webrtc: number;
+  icecast: number;
+  pull: number;
+}
+
+/** Object (first seen in getManagedStreamLive response.destinations.destination). */
+export interface GetManagedStreamLiveDestination {
+  id: string;
+  state: "disabled" | "stopped" | "error" | "connected" | "connecting" | "retrying";
+  since: string | null;
+  bitrateKbps: number;
+  retries: number;
+  lastError: string | null;
+}
+
+/** Object (first seen in getManagedStreamLive response.inputs.input). */
+export interface GetManagedStreamLiveInput {
+  id: string;
+  state: "live" | "disabled" | "offline";
+  activeRole: "primary" | "backup" | null;
+  publishers: GetManagedStreamLiveInputPublisher[];
+}
+
+/** Object (first seen in getManagedStreamLive response.inputs.input.publishers.publisher). */
+export interface GetManagedStreamLiveInputPublisher {
+  role: "primary" | "backup";
+  protocol: string;
+  remote: string;
+  since: string;
+  video: GetManagedStreamLiveInputPublisherVideo | null;
+  audio: GetManagedStreamLiveInputPublisherAudio | null;
+  srt: GetManagedStreamLiveInputPublisherSrt | null;
+}
+
+/** Object (first seen in getManagedStreamLive response.inputs.input.publishers.publisher.audio). */
+export interface GetManagedStreamLiveInputPublisherAudio {
+  codec: string;
+  sampleRate: number;
+  channels: number;
+  bitrateKbps: number;
+}
+
+/** Object (first seen in getManagedStreamLive response.inputs.input.publishers.publisher.srt). */
+export interface GetManagedStreamLiveInputPublisherSrt {
+  rttMs: number;
+  lossPct: number;
+  retransmits: number;
+  latencyMs: number;
+}
+
+/** Object (first seen in getManagedStreamLive response.inputs.input.publishers.publisher.video). */
+export interface GetManagedStreamLiveInputPublisherVideo {
+  codec: string;
+  width: number;
+  height: number;
+  fps: number;
+  bitrateKbps: number;
+  keyframeIntervalMs: number;
+  bframes: boolean;
+}
+
+/** Object (first seen in getManagedStreamLive response.mixers.mixer). */
+export interface GetManagedStreamLiveMixer {
+  id: string;
+  state: "rejected" | "stopped" | "running" | "waiting" | "error";
+  activeScene: string;
+  processingMbps: number;
+  error?: string | null;
+}
+
+/** Object (first seen in getManagedStreamLive response). */
+export interface GetManagedStreamLiveResponse {
+  server: GetManagedStreamLiveServer;
+  inputs: GetManagedStreamLiveInput[];
+  mixers: GetManagedStreamLiveMixer[];
+  channels: GetManagedStreamLiveChannel[];
+  destinations: GetManagedStreamLiveDestination[];
+  schedules: GetManagedStreamLiveSchedule[];
+}
+
+/** Object (first seen in getManagedStreamLive response.schedules.schedule). */
+export interface GetManagedStreamLiveSchedule {
+  id: string;
+  nextFire: string | null;
+  lastFire: GetManagedStreamLiveScheduleLastFire | null;
+}
+
+/** Object (first seen in getManagedStreamLive response.schedules.schedule.lastFire). */
+export interface GetManagedStreamLiveScheduleLastFire {
+  at: string;
+  status: "error" | "ok" | "missed";
+}
+
+/** Object (first seen in getManagedStreamLive response.server). */
+export interface GetManagedStreamLiveServer {
+  runState: "stopped" | "running";
+  billing: CreateManagedInstanceInstanceStreamBilling;
+  egressMbps: number;
+  speedMbps: number;
+  throttled: boolean;
+  processingMbpsUsed: number;
+  processingMbps: number;
+  viewers: number;
+  webrtcSessions: number;
+}
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId (getManagedStreamMixer). */
+export type GetManagedStreamMixerResponse = CreateManagedStreamMixerMixer;
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId (getManagedStreamPlaylist). */
+export type GetManagedStreamPlaylistResponse = CreateManagedStreamPlaylistPlaylist;
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId (getManagedStreamSchedule). */
+export type GetManagedStreamScheduleResponse = CreateManagedStreamScheduleSchedule;
+
+/** Object (first seen in getManagedStreamServer response). */
+export interface GetManagedStreamServerResponse {
+  host: string;
+  speedMbps: number;
+  processingMbps: number;
+  webrtcSessions: number;
+  timezone: string;
+  sync: CreateManagedInstanceInstanceStreamSync;
+  billing: CreateManagedInstanceInstanceStreamBilling;
+  ingest: CreateManagedInstanceInstanceStreamIngest;
+  live: CreateManagedInstanceInstanceStreamLive | null;
+  price: CreateManagedInstanceInstanceStreamPrice;
+  offlineSlate: string | null;
+  allowedOrigins: string[];
+  studioOrigins: string[];
+}
+
+/** Object (first seen in getManagedStreamStats response.points.point). */
+export interface GetManagedStreamStatsPoint {
+  minute: string;
+  channel: string;
+  viewers: number;
+  viewerSeconds: number;
+  egressBytes: number;
+  countries: Record<string, number>;
+}
+
+/** Object (first seen in getManagedStreamStats response). */
+export interface GetManagedStreamStatsResponse {
+  points: GetManagedStreamStatsPoint[];
+}
+
+/** Object (first seen in getManagedStreamUsage response.free). */
+export interface GetManagedStreamUsageFree {
+  bandwidthGbUsed: number;
+  bandwidthGbTotal: number;
+  processingMbpsHoursUsed: number;
+  processingMbpsHoursTotal: number;
+  freeSpeedMbps: number;
+}
+
+/** Object (first seen in getManagedStreamUsage response.hourly.hourlyItem). */
+export interface GetManagedStreamUsageHourlyItem {
+  peakViewers: number;
+  hour: string;
+  speedMbpsHours: number;
+  processingMbpsHours: number;
+  viewerHours: number;
+  costUsd: number;
+  egressGb: GetManagedStreamUsageHourlyItemEgressGb;
+}
+
+/** Object (first seen in getManagedStreamUsage response.hourly.hourlyItem.egressGb). */
+export interface GetManagedStreamUsageHourlyItemEgressGb {
+  hls: number;
+  webrtc: number;
+  icecast: number;
+  push: number;
+  pull: number;
+}
+
+/** Object (first seen in getManagedStreamUsage response). */
+export interface GetManagedStreamUsageResponse {
+  month: string;
+  free: GetManagedStreamUsageFree;
+  totals: GetManagedStreamUsageTotals;
+  estimatedMonthUsd: number;
+  hourly: GetManagedStreamUsageHourlyItem[];
+  mode: "off" | "write" | "shadow";
+  charged: boolean;
+}
+
+/** Object (first seen in getManagedStreamUsage response.totals). */
+export interface GetManagedStreamUsageTotals {
+  speedMbpsHours: number;
+  processingMbpsHours: number;
+  bandwidthGb: number;
+  costUsd: number;
+}
+
 /** Object (first seen in getManagedWorkspace response.cost). */
 export interface GetManagedWorkspaceCost {
   hourly: number;
@@ -832,6 +2428,7 @@ export interface GetManagedWorkspaceCounts {
 export interface GetManagedWorkspaceLimits {
   maxInstancesPerAccount: number;
   maxRealtimeInstancesPerAccount: number;
+  maxStreamInstancesPerAccount: number;
 }
 
 /** Object (first seen in getManagedWorkspace response). */
@@ -841,11 +2438,505 @@ export interface GetManagedWorkspaceResponse {
   limits: GetManagedWorkspaceLimits;
 }
 
+/** Data of GET /api/v1/managed/streams/price (getStreamPriceEstimate). */
+export type GetStreamPriceEstimateResponse = GetManagedCatalogStreamsStartingPrice;
+
+/** Object (first seen in listManagedStreamBindings response). */
+export interface ListManagedStreamBindingsResponse {
+  items: CreateManagedStreamBindingResponse[];
+}
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels (listManagedStreamChannels). */
+export type ListManagedStreamChannelsResponse = CreateManagedStreamChannelChannel[];
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations (listManagedStreamDestinations). */
+export type ListManagedStreamDestinationsResponse = CreateManagedStreamDestinationDestination[];
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains (listManagedStreamDomains). */
+export type ListManagedStreamDomainsResponse = CreateManagedStreamDomainDomain[];
+
+/** One of ListManagedStreamEventsEventInputConnected, ListManagedStreamEventsEventInputDisconnected, ListManagedStreamEventsEventInputFailover, ListManagedStreamEventsEventChannelLive, ListManagedStreamEventsEventChannelOffline, ListManagedStreamEventsEventDestinationConnected, ListManagedStreamEventsEventDestinationFailed, ListManagedStreamEventsEventDestinationStopped, ListManagedStreamEventsEventRecordingStarted, ListManagedStreamEventsEventRecordingCompleted, ListManagedStreamEventsEventRecordingFailed, ListManagedStreamEventsEventClipCompleted, ListManagedStreamEventsEventClipFailed, ListManagedStreamEventsEventScheduleFired, ListManagedStreamEventsEventScheduleMissed, ListManagedStreamEventsEventScheduleFailed, ListManagedStreamEventsEventProcessingRejected, ListManagedStreamEventsEventSpeedThrottled, ListManagedStreamEventsEventBillingBlocked, ListManagedStreamEventsEventBillingUnblocked, ListManagedStreamEventsEventPlaylistItem (first seen in listManagedStreamEvents response.events.event). */
+export type ListManagedStreamEventsEvent = ListManagedStreamEventsEventInputConnected | ListManagedStreamEventsEventInputDisconnected | ListManagedStreamEventsEventInputFailover | ListManagedStreamEventsEventChannelLive | ListManagedStreamEventsEventChannelOffline | ListManagedStreamEventsEventDestinationConnected | ListManagedStreamEventsEventDestinationFailed | ListManagedStreamEventsEventDestinationStopped | ListManagedStreamEventsEventRecordingStarted | ListManagedStreamEventsEventRecordingCompleted | ListManagedStreamEventsEventRecordingFailed | ListManagedStreamEventsEventClipCompleted | ListManagedStreamEventsEventClipFailed | ListManagedStreamEventsEventScheduleFired | ListManagedStreamEventsEventScheduleMissed | ListManagedStreamEventsEventScheduleFailed | ListManagedStreamEventsEventProcessingRejected | ListManagedStreamEventsEventSpeedThrottled | ListManagedStreamEventsEventBillingBlocked | ListManagedStreamEventsEventBillingUnblocked | ListManagedStreamEventsEventPlaylistItem;
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventBillingBlocked {
+  seq: string;
+  id: string;
+  at: string;
+  type: "billing.blocked";
+  data: ListManagedStreamEventsEventBillingBlockedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventBillingBlockedData {
+  reason: "suspended" | "balance" | "spend_cap" | null;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventBillingUnblocked {
+  seq: string;
+  id: string;
+  at: string;
+  type: "billing.unblocked";
+  data: ListManagedStreamEventsEventBillingBlockedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventChannelLive {
+  seq: string;
+  id: string;
+  at: string;
+  type: "channel.live";
+  data: ListManagedStreamEventsEventChannelLiveData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventChannelLiveData {
+  channel: string;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventChannelOffline {
+  seq: string;
+  id: string;
+  at: string;
+  type: "channel.offline";
+  data: ListManagedStreamEventsEventChannelLiveData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventClipCompleted {
+  seq: string;
+  id: string;
+  at: string;
+  type: "clip.completed";
+  data: ListManagedStreamEventsEventClipCompletedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventClipCompletedData {
+  clip: string;
+  channel: string;
+  storageLink: string;
+  objectKey: string;
+  bytes: number;
+  durationMs: number;
+  name: string;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventClipFailed {
+  seq: string;
+  id: string;
+  at: string;
+  type: "clip.failed";
+  data: ListManagedStreamEventsEventClipFailedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventClipFailedData {
+  clip: string;
+  channel: string;
+  storageLink?: string;
+  objectKey?: string;
+  bytes?: number;
+  durationMs?: number;
+  name: string;
+  error?: string;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventDestinationConnected {
+  seq: string;
+  id: string;
+  at: string;
+  type: "destination.connected";
+  data: ListManagedStreamEventsEventDestinationConnectedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventDestinationConnectedData {
+  destination: string;
+  error?: string;
+  retryInMs?: number;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventDestinationFailed {
+  seq: string;
+  id: string;
+  at: string;
+  type: "destination.failed";
+  data: ListManagedStreamEventsEventDestinationConnectedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventDestinationStopped {
+  seq: string;
+  id: string;
+  at: string;
+  type: "destination.stopped";
+  data: ListManagedStreamEventsEventDestinationConnectedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventInputConnected {
+  seq: string;
+  id: string;
+  at: string;
+  type: "input.connected";
+  data: ListManagedStreamEventsEventInputConnectedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventInputConnectedData {
+  input: string;
+  role: "primary" | "backup";
+  protocol: string;
+  reason?: string;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventInputDisconnected {
+  seq: string;
+  id: string;
+  at: string;
+  type: "input.disconnected";
+  data: ListManagedStreamEventsEventInputConnectedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventInputFailover {
+  seq: string;
+  id: string;
+  at: string;
+  type: "input.failover";
+  data: ListManagedStreamEventsEventInputFailoverData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventInputFailoverData {
+  input?: string;
+  channel?: string;
+  from: string;
+  to: string;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventPlaylistItem {
+  seq: string;
+  id: string;
+  at: string;
+  type: "playlist.item";
+  data: ListManagedStreamEventsEventPlaylistItemData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventPlaylistItemData {
+  channel: string;
+  playlist: string;
+  item: number;
+  title: string;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventProcessingRejected {
+  seq: string;
+  id: string;
+  at: string;
+  type: "processing.rejected";
+  data: ListManagedStreamEventsEventProcessingRejectedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventProcessingRejectedData {
+  channel?: string;
+  mixer?: string;
+  neededMbps: number;
+  availableMbps: number;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventRecordingCompleted {
+  seq: string;
+  id: string;
+  at: string;
+  type: "recording.completed";
+  data: ListManagedStreamEventsEventRecordingCompletedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventRecordingCompletedData {
+  recording: string;
+  channel: string;
+  storageLink: string;
+  objectKey: string;
+  part: number;
+  bytes: number;
+  durationMs: number;
+  startedAt: string;
+  endedAt: string;
+  registerAsset: boolean;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventRecordingFailed {
+  seq: string;
+  id: string;
+  at: string;
+  type: "recording.failed";
+  data: ListManagedStreamEventsEventRecordingFailedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventRecordingFailedData {
+  recording: string;
+  channel: string;
+  error: string;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventRecordingStarted {
+  seq: string;
+  id: string;
+  at: string;
+  type: "recording.started";
+  data: ListManagedStreamEventsEventRecordingStartedData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventRecordingStartedData {
+  recording: string;
+  channel: string;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventScheduleFailed {
+  seq: string;
+  id: string;
+  at: string;
+  type: "schedule.failed";
+  data: ListManagedStreamEventsEventScheduleFiredData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventScheduleFired {
+  seq: string;
+  id: string;
+  at: string;
+  type: "schedule.fired";
+  data: ListManagedStreamEventsEventScheduleFiredData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventScheduleFiredData {
+  schedule: string;
+  fireId: string;
+  phase: "start" | "end";
+  at: string;
+  error?: string;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventScheduleMissed {
+  seq: string;
+  id: string;
+  at: string;
+  type: "schedule.missed";
+  data: ListManagedStreamEventsEventScheduleFiredData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event). */
+export interface ListManagedStreamEventsEventSpeedThrottled {
+  seq: string;
+  id: string;
+  at: string;
+  type: "speed.throttled";
+  data: ListManagedStreamEventsEventSpeedThrottledData;
+}
+
+/** Object (first seen in listManagedStreamEvents response.events.event.data). */
+export interface ListManagedStreamEventsEventSpeedThrottledData {
+  egressMbps: number;
+  speedMbps: number;
+}
+
+/** Object (first seen in listManagedStreamEvents response). */
+export interface ListManagedStreamEventsResponse {
+  events: ListManagedStreamEventsEvent[];
+  nextCursor: string;
+}
+
+/** Object (first seen in listManagedStreamGraphics response.item). */
+export interface ListManagedStreamGraphicsItem {
+  id: string;
+  name: string;
+  kind: "image" | "svg" | "html" | "font";
+  sha256: string;
+  bytes: number;
+  contentType: string;
+  variables: Record<string, string>;
+  uploadedAt: string | null;
+  revision: number;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics (listManagedStreamGraphics). */
+export type ListManagedStreamGraphicsResponse = ListManagedStreamGraphicsItem[];
+
+/** Object (first seen in listManagedStreamInputs response.item). */
+export interface ListManagedStreamInputsItem {
+  id: string;
+  name: string;
+  kind: "push" | "pull";
+  enabled: boolean;
+  protocols: Array<"rtmp" | "rtmps" | "srt" | "whip" | "icecast">;
+  maxBitrateKbps: number;
+  allowedCidrs: string[];
+  createdAt: string;
+  updatedAt: string;
+  revision: number;
+  keyHints: CreateManagedStreamInputInputKeyHints;
+  keyFingerprints: CreateManagedStreamInputInputKeyHints;
+  hasSrtPassphrase: boolean;
+  pull: CreateManagedStreamInputInputPull | null;
+}
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs (listManagedStreamInputs). */
+export type ListManagedStreamInputsResponse = ListManagedStreamInputsItem[];
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers (listManagedStreamMixers). */
+export type ListManagedStreamMixersResponse = CreateManagedStreamMixerMixer[];
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys (listManagedStreamPlaybackKeys). */
+export type ListManagedStreamPlaybackKeysResponse = CreateManagedStreamPlaybackKeyKey[];
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists (listManagedStreamPlaylists). */
+export type ListManagedStreamPlaylistsResponse = CreateManagedStreamPlaylistPlaylist[];
+
+/** Object (first seen in listManagedStreamRecordings response.items.item). */
+export interface ListManagedStreamRecordingsItem {
+  id: string;
+  channelId: string;
+  kind: "recording" | "clip";
+  name: string | null;
+  part: number;
+  status: "failed" | "completed" | "recording" | "uploading" | "registered";
+  storageLinkId: string | null;
+  storageProjectId: string | null;
+  bucket: string | null;
+  objectKey: string | null;
+  storageAssetId: string | null;
+  bytes: number | null;
+  durationMs: number | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+  storageLink: ListManagedStreamRecordingsItemStorageLink | null;
+}
+
+/** Object (first seen in listManagedStreamRecordings response.items.item.storageLink). */
+export interface ListManagedStreamRecordingsItemStorageLink {
+  id: string;
+  storageProjectId: string;
+  bucket: string;
+  mode: string;
+}
+
+/** Object (first seen in listManagedStreamRecordings response). */
+export interface ListManagedStreamRecordingsResponse {
+  items: ListManagedStreamRecordingsItem[];
+  nextCursor: string | null;
+}
+
+/** Object (first seen in listManagedStreamScheduleRuns response). */
+export interface ListManagedStreamScheduleRunsResponse {
+  runs: ListManagedStreamScheduleRunsRun[];
+  nextCursor: string | null;
+}
+
+/** Object (first seen in listManagedStreamScheduleRuns response.runs.run). */
+export interface ListManagedStreamScheduleRunsRun {
+  id: string;
+  scheduleId: string;
+  phase: "start" | "end";
+  status: "failed" | "ok" | "missed";
+  firedAt: string;
+  error: string | null;
+}
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules (listManagedStreamSchedules). */
+export type ListManagedStreamSchedulesResponse = CreateManagedStreamScheduleSchedule[];
+
+/** Object (first seen in listManagedStreamStorageAssets response.assets.asset). */
+export interface ListManagedStreamStorageAssetsAsset {
+  assetId: string;
+  title: string;
+  objectKey: string;
+  contentType: string | null;
+  sizeBytes: number;
+  durationSeconds: number | null;
+  hlsReady: boolean;
+  hlsObjectKey: string | null;
+  renditions: ListManagedStreamStorageAssetsAssetRendition[];
+  createdAt: string;
+}
+
+/** Object (first seen in listManagedStreamStorageAssets response.assets.asset.renditions.rendition). */
+export interface ListManagedStreamStorageAssetsAssetRendition {
+  height: number;
+  state: string;
+}
+
+/** Object (first seen in listManagedStreamStorageAssets response.link). */
+export interface ListManagedStreamStorageAssetsLink {
+  id: string;
+  storageProjectId: string;
+  bucket: string;
+  mode: string;
+}
+
+/** Object (first seen in listManagedStreamStorageAssets response). */
+export interface ListManagedStreamStorageAssetsResponse {
+  link: ListManagedStreamStorageAssetsLink;
+  assets: ListManagedStreamStorageAssetsAsset[];
+}
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links (listManagedStreamStorageLinks). */
+export type ListManagedStreamStorageLinksResponse = CreateManagedStreamStorageLinkStorageLink[];
+
+/** Object (first seen in listManagedStreamWebhookDeliveries response.deliveries.delivery). */
+export interface ListManagedStreamWebhookDeliveriesDelivery {
+  id: string;
+  webhook: string;
+  event: string;
+  type: string;
+  attempt: number;
+  status: "pending" | "failed" | "delivered";
+  httpStatus: number | null;
+  error: string | null;
+  at: string;
+  nextAttemptAt: string | null;
+}
+
+/** Object (first seen in listManagedStreamWebhookDeliveries response). */
+export interface ListManagedStreamWebhookDeliveriesResponse {
+  deliveries: ListManagedStreamWebhookDeliveriesDelivery[];
+  nextCursor: string | null;
+}
+
+/** Data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks (listManagedStreamWebhooks). */
+export type ListManagedStreamWebhooksResponse = CreateManagedStreamWebhookWebhook[];
+
 /** Object (first seen in createManagedInstance response.instance.activeOperation). */
 export interface ManagedActiveOperation {
   id: string;
-  kind: "create" | "restart" | "delete" | "resize" | "start" | "stop" | "config_apply" | "network_update" | "upgrade" | "export" | "import";
-  status: "failed" | "succeeded" | "queued" | "running" | "canceled";
+  kind: "create" | "restart" | "delete" | "start" | "resize" | "stop" | "config_apply" | "network_update" | "upgrade" | "export" | "import";
+  status: "failed" | "succeeded" | "canceled" | "queued" | "running";
   stepIndex: number;
   stepCount: number;
   stepLabel: string | null;
@@ -966,7 +3057,7 @@ export interface ManagedConfigSetting {
   key: string;
   value: string | null;
   defaultValue: string | null;
-  type: "string" | "boolean" | "duration" | "integer" | "real" | "bytes" | "enum";
+  type: "string" | "boolean" | "duration" | "bytes" | "integer" | "real" | "enum";
   unit: string | null;
   min: string | null;
   max: string | null;
@@ -1074,7 +3165,7 @@ export interface ManagedErrorInfo {
 
 /** Object (first seen in getManagedInstanceAlerts response.firing.firingItem). */
 export interface ManagedFiringAlert {
-  key: "storage" | "connections" | "down" | "webhooks";
+  key: "storage" | "connections" | "down" | "webhooks" | "stream_destinations" | "stream_processing" | "stream_speed" | "stream_billing" | "stream_domain";
   since: string;
 }
 
@@ -1082,8 +3173,8 @@ export interface ManagedFiringAlert {
 export interface ManagedInstance {
   id: string;
   name: string;
-  service: "database" | "realtime";
-  engine: "realtime" | "postgresql" | "mysql" | "libsql";
+  service: "database" | "realtime" | "stream";
+  engine: "realtime" | "stream" | "postgresql" | "mysql" | "libsql";
   engineLabel: string;
   version: string;
   versionLabel: string;
@@ -1100,14 +3191,15 @@ export interface ManagedInstance {
   price: ManagedPrice;
   activeOperation: ManagedActiveOperation | null;
   createdAt: string;
+  stream?: CreateManagedInstanceInstanceStream;
 }
 
 /** Object (first seen in getManagedInstance response). */
 export interface ManagedInstanceDetail {
   id: string;
   name: string;
-  service: "database" | "realtime";
-  engine: "realtime" | "postgresql" | "mysql" | "libsql";
+  service: "database" | "realtime" | "stream";
+  engine: "realtime" | "stream" | "postgresql" | "mysql" | "libsql";
   engineLabel: string;
   version: string;
   versionLabel: string;
@@ -1124,6 +3216,7 @@ export interface ManagedInstanceDetail {
   price: ManagedPrice;
   activeOperation: ManagedActiveOperation | null;
   createdAt: string;
+  stream?: CreateManagedInstanceInstanceStream;
   endpoint: ManagedInstanceEndpoint | null;
   adminUsername: string | null;
   defaultDatabase: string | null;
@@ -1187,8 +3280,8 @@ export interface ManagedMetricsRecord {
 export interface ManagedOperation {
   id: string;
   instanceId: string;
-  kind: "create" | "restart" | "delete" | "resize" | "start" | "stop" | "config_apply" | "network_update" | "upgrade" | "export" | "import";
-  status: "failed" | "succeeded" | "queued" | "running" | "canceled";
+  kind: "create" | "restart" | "delete" | "start" | "resize" | "stop" | "config_apply" | "network_update" | "upgrade" | "export" | "import";
+  status: "failed" | "succeeded" | "canceled" | "queued" | "running";
   steps: ManagedOperationStep[];
   error: ManagedErrorInfo | null;
   actorUserId: string | null;
@@ -1729,7 +3822,7 @@ export interface PostManagedInstanceQueryStatement {
 export interface PostManagedInstanceQueryStatementColumn {
   name: string;
   type: string;
-  kind: "number" | "boolean" | "json" | "text" | "binary" | "datetime" | "other";
+  kind: "number" | "boolean" | "json" | "other" | "text" | "binary" | "datetime";
 }
 
 /** Object (first seen in postManagedInstanceQuery response.statements.statement.error). */
@@ -1747,6 +3840,8 @@ export interface PostManagedInstanceResizeBody {
   memoryMib?: number;
   storageGib?: number;
   restart?: boolean;
+  speedMbps?: number;
+  processingMbps?: number;
   quotedHourlyTotal: number;
 }
 
@@ -1917,6 +4012,106 @@ export interface PostManagedRealtimeWebhookTestResponse {
   error: string | null;
 }
 
+/** Request object (first seen in postManagedStreamControl body). */
+export interface PostManagedStreamControlBody {
+  id: string;
+  ops: PostManagedStreamControlOpInput[];
+}
+
+/** Request object (first seen in postManagedStreamControl body.ops.op). */
+export interface PostManagedStreamControlOpClipCreateInput {
+  op: "clip.create";
+  channel: string;
+  from: string;
+  to: string;
+  name: string;
+  storageLink?: string;
+  prefix?: string;
+}
+
+/** One of CreateManagedStreamScheduleOnStartItemMixerSceneInput, CreateManagedStreamScheduleOnStartItemMixerLayerInput, CreateManagedStreamScheduleOnStartItemMixerAudioInput, CreateManagedStreamScheduleOnStartItemMixerTextInput, CreateManagedStreamScheduleOnStartItemGraphicsSetInput, CreateManagedStreamScheduleOnStartItemVariant6Input, CreateManagedStreamScheduleOnStartItemChannelSourceInput, CreateManagedStreamScheduleOnStartItemChannelSlateInput, CreateManagedStreamScheduleOnStartItemVariant9Input, CreateManagedStreamScheduleOnStartItemVariant10Input, PostManagedStreamControlOpClipCreateInput, CreateManagedStreamScheduleOnStartItemPlaylistPlayInput, CreateManagedStreamScheduleOnStartItemPlaylistNextInput, PostManagedStreamControlOpInputDisconnectInput (first seen in postManagedStreamControl body.ops.op). */
+export type PostManagedStreamControlOpInput = CreateManagedStreamScheduleOnStartItemMixerSceneInput | CreateManagedStreamScheduleOnStartItemMixerLayerInput | CreateManagedStreamScheduleOnStartItemMixerAudioInput | CreateManagedStreamScheduleOnStartItemMixerTextInput | CreateManagedStreamScheduleOnStartItemGraphicsSetInput | CreateManagedStreamScheduleOnStartItemVariant6Input | CreateManagedStreamScheduleOnStartItemChannelSourceInput | CreateManagedStreamScheduleOnStartItemChannelSlateInput | CreateManagedStreamScheduleOnStartItemVariant9Input | CreateManagedStreamScheduleOnStartItemVariant10Input | PostManagedStreamControlOpClipCreateInput | CreateManagedStreamScheduleOnStartItemPlaylistPlayInput | CreateManagedStreamScheduleOnStartItemPlaylistNextInput | PostManagedStreamControlOpInputDisconnectInput;
+
+/** Request object (first seen in postManagedStreamControl body.ops.op). */
+export interface PostManagedStreamControlOpInputDisconnectInput {
+  op: "input.disconnect";
+  input: string;
+  role?: "primary" | "backup";
+}
+
+/** Object (first seen in postManagedStreamControl response). */
+export interface PostManagedStreamControlResponse {
+  id: string;
+  results: PostManagedStreamControlResult[];
+}
+
+/** One of PostManagedStreamControlResultVariant1, PostManagedStreamControlResultVariant2 (first seen in postManagedStreamControl response.results.result). */
+export type PostManagedStreamControlResult = PostManagedStreamControlResultVariant1 | PostManagedStreamControlResultVariant2;
+
+/** Object (first seen in postManagedStreamControl response.results.result). */
+export interface PostManagedStreamControlResultVariant1 {
+  ok: true;
+  clip?: string;
+}
+
+/** Object (first seen in postManagedStreamControl response.results.result). */
+export interface PostManagedStreamControlResultVariant2 {
+  ok: false;
+  error: PostManagedStreamControlResultVariant2Error;
+}
+
+/** Object (first seen in postManagedStreamControl response.results.result.error). */
+export interface PostManagedStreamControlResultVariant2Error {
+  code: string;
+  message: string;
+}
+
+/** Request object (first seen in previewManagedStreamSchedule body). */
+export interface PreviewManagedStreamScheduleBody {
+  timezone: string;
+  start: string;
+  rrule?: string | null;
+  durationMinutes: number;
+}
+
+/** Object (first seen in previewManagedStreamSchedule response). */
+export interface PreviewManagedStreamScheduleResponse {
+  starts: string[];
+  errors?: CreateManagedStreamChannelSyncWarning[];
+}
+
+/** Object (first seen in revealManagedStreamInputKeys response). */
+export interface RevealManagedStreamInputKeysResponse {
+  primary?: string;
+  backup?: string;
+  srtPassphrase?: string;
+  pullUrl?: string;
+}
+
+/** Request object (first seen in rotateManagedStreamInputKey body). */
+export interface RotateManagedStreamInputKeyBody {
+  role: "primary" | "backup";
+  remove?: boolean;
+}
+
+/** Object (first seen in rotateManagedStreamInputKey response). */
+export interface RotateManagedStreamInputKeyResponse {
+  key: string | null;
+  input: ListManagedStreamInputsItem;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Object (first seen in rotateManagedStreamPlaybackKey response). */
+export interface RotateManagedStreamPlaybackKeyResponse {
+  key: CreateManagedStreamPlaybackKeyKey;
+  secret: string;
+  sync: CreateManagedStreamChannelSync;
+  retired: CreateManagedStreamPlaybackKeyKey;
+}
+
+/** Data of POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/test (testManagedStreamWebhook). */
+export type TestManagedStreamWebhookResponse = PostManagedRealtimeWebhookTestResponse;
+
 /** Request object (first seen in updateManagedInstanceAlerts body). */
 export interface UpdateManagedInstanceAlertsBody {
   storagePercent: number;
@@ -1942,10 +4137,8 @@ export interface UpdateManagedInstanceAllowlistResponse {
   entries: number;
 }
 
-/** Request object (first seen in updateManagedInstance body). */
-export interface UpdateManagedInstanceBody {
-  name: string;
-}
+/** Request body of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/update (updateManagedInstance). */
+export type UpdateManagedInstanceBody = CreateManagedStreamPlaybackKeyBody;
 
 /** Request object (first seen in updateManagedInstanceDeletionProtection body). */
 export interface UpdateManagedInstanceDeletionProtectionBody {
@@ -2011,6 +4204,183 @@ export interface UpdateManagedRealtimeWebhookBody {
 /** Data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/:webhookId/update (updateManagedRealtimeWebhook). */
 export type UpdateManagedRealtimeWebhookResponse = CreateManagedRealtimeWebhookResponse;
 
+/** Request object (first seen in updateManagedStreamChannel body). */
+export interface UpdateManagedStreamChannelBody {
+  source?: CreateManagedStreamChannelSourceInput;
+  access?: CreateManagedStreamChannelAccessInput;
+  backup?: CreateManagedStreamChannelBackupInput | null;
+  recording?: CreateManagedStreamChannelRecordingInput;
+  playback?: CreateManagedStreamChannelPlaybackInput;
+  failover?: CreateManagedStreamChannelFailoverInput;
+  encoding?: CreateManagedStreamChannelEncodingInput;
+  latency?: "low" | "standard" | "ultra";
+  dvrMinutes?: number;
+  maxViewers?: number;
+  name?: string;
+  enabled?: boolean;
+  position?: number;
+  revision: number;
+}
+
+/** Data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/update (updateManagedStreamChannel). */
+export type UpdateManagedStreamChannelResponse = CreateManagedStreamChannelResponse;
+
+/** Request object (first seen in updateManagedStreamDestination body). */
+export interface UpdateManagedStreamDestinationBody {
+  source?: CreateManagedStreamDestinationSourceInput;
+  protocol?: "rtmp" | "rtmps" | "srt";
+  url?: string;
+  rendition?: string;
+  autoStart?: boolean;
+  name?: string;
+  enabled?: boolean;
+  streamKey?: string;
+  srtPassphrase?: string | null;
+  revision: number;
+}
+
+/** Data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/update (updateManagedStreamDestination). */
+export type UpdateManagedStreamDestinationResponse = CreateManagedStreamDestinationResponse;
+
+/** Request object (first seen in updateManagedStreamGraphic body). */
+export interface UpdateManagedStreamGraphicBody {
+  revision: number;
+  name?: string;
+  variables?: Record<string, string>;
+}
+
+/** Object (first seen in updateManagedStreamGraphic response). */
+export interface UpdateManagedStreamGraphicResponse {
+  graphic: ListManagedStreamGraphicsItem;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in updateManagedStreamInput body). */
+export interface UpdateManagedStreamInputBody {
+  name?: string;
+  enabled?: boolean;
+  protocols?: Array<"rtmp" | "rtmps" | "srt" | "whip" | "icecast">;
+  srtPassphrase?: string | null;
+  pull?: UpdateManagedStreamInputPullInput;
+  maxBitrateKbps?: number;
+  allowedCidrs?: string[];
+  revision: number;
+}
+
+/** Request object (first seen in updateManagedStreamInput body.pull). */
+export interface UpdateManagedStreamInputPullInput {
+  url?: string;
+  transport?: "auto" | "tcp" | "udp";
+  reconnect?: boolean;
+}
+
+/** Object (first seen in updateManagedStreamInput response). */
+export interface UpdateManagedStreamInputResponse {
+  input: CreateManagedStreamInputInput;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in updateManagedStreamMixer body). */
+export interface UpdateManagedStreamMixerBody {
+  output?: CreateManagedStreamMixerOutputInput;
+  canvas?: CreateManagedStreamMixerCanvasInput;
+  sources?: CreateManagedStreamMixerSourceInput[];
+  scenes?: CreateManagedStreamMixerSceneInput[];
+  defaultScene?: string;
+  transition?: CreateManagedStreamMixerTransitionInput;
+  name?: string;
+  enabled?: boolean;
+  revision: number;
+}
+
+/** Data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/update (updateManagedStreamMixer). */
+export type UpdateManagedStreamMixerResponse = CreateManagedStreamMixerResponse;
+
+/** Request object (first seen in updateManagedStreamPlaylist body). */
+export interface UpdateManagedStreamPlaylistBody {
+  revision: number;
+  name?: string;
+  loop?: boolean;
+  shuffle?: boolean;
+  encoding?: "auto" | "reencode";
+  items?: CreateManagedStreamPlaylistItemInput[];
+}
+
+/** Data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/update (updateManagedStreamPlaylist). */
+export type UpdateManagedStreamPlaylistResponse = CreateManagedStreamPlaylistResponse;
+
+/** Request object (first seen in updateManagedStreamSchedule body). */
+export interface UpdateManagedStreamScheduleBody {
+  revision: number;
+  name?: string;
+  enabled?: boolean;
+  timezone?: string;
+  start?: string;
+  rrule?: string | null;
+  durationMinutes?: number;
+  onStart?: CreateManagedStreamScheduleOnStartItemInput[];
+  onEnd?: CreateManagedStreamScheduleOnStartItemInput[];
+}
+
+/** Data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/update (updateManagedStreamSchedule). */
+export type UpdateManagedStreamScheduleResponse = CreateManagedStreamScheduleResponse;
+
+/** Request object (first seen in updateManagedStreamSettings body). */
+export interface UpdateManagedStreamSettingsBody {
+  timezone?: string;
+  offlineSlate?: string | null;
+  allowedOrigins?: string[];
+  webrtcSessions?: number;
+}
+
+/** Object (first seen in updateManagedStreamSettings response). */
+export interface UpdateManagedStreamSettingsResponse {
+  server: GetManagedStreamServerResponse;
+  sync: CreateManagedStreamChannelSync;
+  tenant: "pending" | "applied" | "unchanged";
+}
+
+/** Request object (first seen in updateManagedStreamWebhook body). */
+export interface UpdateManagedStreamWebhookBody {
+  revision: number;
+  url?: string;
+  events?: string[];
+  enabled?: boolean;
+}
+
+/** Object (first seen in updateManagedStreamWebhook response). */
+export interface UpdateManagedStreamWebhookResponse {
+  webhook: CreateManagedStreamWebhookWebhook;
+  sync: CreateManagedStreamChannelSync;
+}
+
+/** Request object (first seen in uploadManagedStreamGraphic body). */
+export interface UploadManagedStreamGraphicBody {
+  name: string;
+  kind: "image" | "svg" | "html" | "font";
+  contentType: string;
+  dataBase64: string;
+}
+
+/** Data of POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/upload (uploadManagedStreamGraphic). */
+export type UploadManagedStreamGraphicResponse = UpdateManagedStreamGraphicResponse;
+
+/** Object (first seen in verifyManagedStreamDomain response). */
+export interface VerifyManagedStreamDomainResponse {
+  domain: CreateManagedStreamDomainDomain;
+  verified: boolean;
+  error: string | null;
+  sync: VerifyManagedStreamDomainSync | null;
+}
+
+/** Object (first seen in verifyManagedStreamDomain response.sync). */
+export interface VerifyManagedStreamDomainSync {
+  status: "pending" | "applied";
+  generation: number;
+  error: string | null;
+  warnings: CreateManagedStreamChannelSyncWarning[];
+}
+
 /** Query of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/delete (deleteManagedInstance). */
 export interface DeleteManagedInstanceQuery {
   confirmName: string;
@@ -2046,6 +4416,16 @@ export interface DeleteManagedRealtimeAppQuery {
 /** Query of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/realtime/bindings/:bindingId/delete (deleteManagedRealtimeBinding). */
 export interface DeleteManagedRealtimeBindingQuery {
   removeVariables?: boolean;
+}
+
+/** Query of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/:bindingId/delete (deleteManagedStreamBinding). */
+export interface DeleteManagedStreamBindingQuery {
+  removeVariables?: boolean;
+}
+
+/** Query of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings/:recordingId/delete (deleteManagedStreamRecording). */
+export interface DeleteManagedStreamRecordingQuery {
+  deleteObject?: boolean;
 }
 
 /** Query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/audit (getManagedInstanceAudit). */
@@ -2175,6 +4555,56 @@ export interface GetManagedRealtimeWebhookDeliveriesQuery {
   cursor?: string;
 }
 
+/** Query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/stats (getManagedStreamStats). */
+export interface GetManagedStreamStatsQuery {
+  from?: string;
+  to?: string;
+  channelId?: string;
+}
+
+/** Query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/usage (getManagedStreamUsage). */
+export interface GetManagedStreamUsageQuery {
+  month?: string;
+}
+
+/** Query of GET /api/v1/managed/streams/price (getStreamPriceEstimate). */
+export interface GetStreamPriceEstimateQuery {
+  speedMbps: number;
+  processingMbps?: number;
+}
+
+/** Query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/events (listManagedStreamEvents). */
+export interface ListManagedStreamEventsQuery {
+  after?: string;
+  limit?: number;
+}
+
+/** Query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings (listManagedStreamRecordings). */
+export interface ListManagedStreamRecordingsQuery {
+  kind?: "recording" | "clip";
+  channelId?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+/** Query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/runs (listManagedStreamScheduleRuns). */
+export interface ListManagedStreamScheduleRunsQuery {
+  before?: string;
+  limit?: number;
+}
+
+/** Query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/:linkId/assets (listManagedStreamStorageAssets). */
+export interface ListManagedStreamStorageAssetsQuery {
+  search?: string;
+  hlsReady?: boolean;
+}
+
+/** Query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/deliveries (listManagedStreamWebhookDeliveries). */
+export interface ListManagedStreamWebhookDeliveriesQuery {
+  after?: string;
+  limit?: number;
+}
+
 /** Every Managed Services operation: method, path template, path parameters, query names and body kind. */
 export const MANAGED_OPERATIONS = {
   createManagedInstance: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/create", pathParams: ["projectId"], query: [], body: "json" },
@@ -2188,6 +4618,20 @@ export const MANAGED_OPERATIONS = {
   createManagedRealtimeInspectorToken: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/inspector/token", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
   createManagedRealtimeKey: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/keys/create", pathParams: ["projectId", "instanceId", "appId"], query: [], body: "empty" },
   createManagedRealtimeWebhook: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/create", pathParams: ["projectId", "instanceId", "appId"], query: [], body: "json" },
+  createManagedStreamBinding: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamChannel: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamClip: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/clips/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamDestination: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamDomain: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamInput: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamMixer: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamPlaybackKey: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamPlaybackToken: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/token/create", pathParams: ["projectId", "instanceId", "channelId"], query: [], body: "json" },
+  createManagedStreamPlaylist: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamSchedule: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamStorageLink: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamStudioToken: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/studio-token/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  createManagedStreamWebhook: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/create", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
   deleteManagedInstance: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/delete", pathParams: ["projectId", "instanceId"], query: ["confirmName"], body: "none" },
   deleteManagedInstanceBinding: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/bindings/:bindingId/delete", pathParams: ["projectId", "instanceId", "bindingId"], query: ["removeVariable"], body: "none" },
   deleteManagedInstanceDatabase: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/databases/:databaseName/delete", pathParams: ["projectId", "instanceId", "databaseName"], query: ["confirmName", "force"], body: "none" },
@@ -2197,6 +4641,19 @@ export const MANAGED_OPERATIONS = {
   deleteManagedRealtimeApp: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/delete", pathParams: ["projectId", "instanceId", "appId"], query: ["confirmName"], body: "none" },
   deleteManagedRealtimeBinding: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/bindings/:bindingId/delete", pathParams: ["projectId", "instanceId", "bindingId"], query: ["removeVariables"], body: "none" },
   deleteManagedRealtimeWebhook: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/:webhookId/delete", pathParams: ["projectId", "instanceId", "appId", "webhookId"], query: [], body: "none" },
+  deleteManagedStreamBinding: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/:bindingId/delete", pathParams: ["projectId", "instanceId", "bindingId"], query: ["removeVariables"], body: "none" },
+  deleteManagedStreamChannel: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/delete", pathParams: ["projectId", "instanceId", "channelId"], query: [], body: "none" },
+  deleteManagedStreamDestination: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/delete", pathParams: ["projectId", "instanceId", "destinationId"], query: [], body: "none" },
+  deleteManagedStreamDomain: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/:domainId/delete", pathParams: ["projectId", "instanceId", "domainId"], query: [], body: "none" },
+  deleteManagedStreamGraphic: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/:graphicId/delete", pathParams: ["projectId", "instanceId", "graphicId"], query: [], body: "none" },
+  deleteManagedStreamInput: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/delete", pathParams: ["projectId", "instanceId", "inputId"], query: [], body: "none" },
+  deleteManagedStreamMixer: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/delete", pathParams: ["projectId", "instanceId", "mixerId"], query: [], body: "none" },
+  deleteManagedStreamPlaybackKey: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/:keyId/delete", pathParams: ["projectId", "instanceId", "keyId"], query: [], body: "none" },
+  deleteManagedStreamPlaylist: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/delete", pathParams: ["projectId", "instanceId", "playlistId"], query: [], body: "none" },
+  deleteManagedStreamRecording: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings/:recordingId/delete", pathParams: ["projectId", "instanceId", "recordingId"], query: ["deleteObject"], body: "none" },
+  deleteManagedStreamSchedule: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/delete", pathParams: ["projectId", "instanceId", "scheduleId"], query: [], body: "none" },
+  deleteManagedStreamStorageLink: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/:linkId/delete", pathParams: ["projectId", "instanceId", "linkId"], query: [], body: "none" },
+  deleteManagedStreamWebhook: { method: "DELETE", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/delete", pathParams: ["projectId", "instanceId", "webhookId"], query: [], body: "none" },
   getManagedCatalog: { method: "GET", path: "/api/v1/managed/catalog", pathParams: [], query: [], body: "none" },
   getManagedClientIp: { method: "GET", path: "/api/v1/managed/client-ip", pathParams: [], query: [], body: "none" },
   getManagedInstance: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
@@ -2240,7 +4697,36 @@ export const MANAGED_OPERATIONS = {
   getManagedRealtimeUsage: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/usage", pathParams: ["projectId", "instanceId"], query: ["appId", "since"], body: "none" },
   getManagedRealtimeWebhookDeliveries: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/deliveries", pathParams: ["projectId", "instanceId", "appId"], query: ["webhookId", "status", "limit", "cursor"], body: "none" },
   getManagedRealtimeWebhooks: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks", pathParams: ["projectId", "instanceId", "appId"], query: [], body: "none" },
+  getManagedStreamChannel: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId", pathParams: ["projectId", "instanceId", "channelId"], query: [], body: "none" },
+  getManagedStreamChannelPlayback: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/playback", pathParams: ["projectId", "instanceId", "channelId"], query: [], body: "none" },
+  getManagedStreamDestination: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId", pathParams: ["projectId", "instanceId", "destinationId"], query: [], body: "none" },
+  getManagedStreamInput: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId", pathParams: ["projectId", "instanceId", "inputId"], query: [], body: "none" },
+  getManagedStreamLive: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/live", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  getManagedStreamMixer: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId", pathParams: ["projectId", "instanceId", "mixerId"], query: [], body: "none" },
+  getManagedStreamPlaylist: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId", pathParams: ["projectId", "instanceId", "playlistId"], query: [], body: "none" },
+  getManagedStreamSchedule: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId", pathParams: ["projectId", "instanceId", "scheduleId"], query: [], body: "none" },
+  getManagedStreamServer: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  getManagedStreamStats: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/stats", pathParams: ["projectId", "instanceId"], query: ["from", "to", "channelId"], body: "none" },
+  getManagedStreamUsage: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/usage", pathParams: ["projectId", "instanceId"], query: ["month"], body: "none" },
   getManagedWorkspace: { method: "GET", path: "/api/v1/projects/:projectId/managed", pathParams: ["projectId"], query: [], body: "none" },
+  getStreamPriceEstimate: { method: "GET", path: "/api/v1/managed/streams/price", pathParams: [], query: ["speedMbps", "processingMbps"], body: "none" },
+  listManagedStreamBindings: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamChannels: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamDestinations: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamDomains: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamEvents: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/events", pathParams: ["projectId", "instanceId"], query: ["after", "limit"], body: "none" },
+  listManagedStreamGraphics: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamInputs: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamMixers: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamPlaybackKeys: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamPlaylists: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamRecordings: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings", pathParams: ["projectId", "instanceId"], query: ["kind", "channelId", "cursor", "limit"], body: "none" },
+  listManagedStreamScheduleRuns: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/runs", pathParams: ["projectId", "instanceId", "scheduleId"], query: ["before", "limit"], body: "none" },
+  listManagedStreamSchedules: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamStorageAssets: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/:linkId/assets", pathParams: ["projectId", "instanceId", "linkId"], query: ["search", "hlsReady"], body: "none" },
+  listManagedStreamStorageLinks: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
+  listManagedStreamWebhookDeliveries: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/deliveries", pathParams: ["projectId", "instanceId", "webhookId"], query: ["after", "limit"], body: "none" },
+  listManagedStreamWebhooks: { method: "GET", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks", pathParams: ["projectId", "instanceId"], query: [], body: "none" },
   postManagedInstanceConfigApply: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/config/apply", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
   postManagedInstanceConfigRevert: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/config/revert", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
   postManagedInstanceConfigValidate: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/config/validate", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
@@ -2272,6 +4758,12 @@ export const MANAGED_OPERATIONS = {
   postManagedRealtimeUserTerminate: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/users/terminate", pathParams: ["projectId", "instanceId", "appId"], query: [], body: "json" },
   postManagedRealtimeWebhookRedeliver: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/deliveries/:deliveryId/redeliver", pathParams: ["projectId", "instanceId", "appId", "deliveryId"], query: [], body: "empty" },
   postManagedRealtimeWebhookTest: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/:webhookId/test", pathParams: ["projectId", "instanceId", "appId", "webhookId"], query: [], body: "empty" },
+  postManagedStreamControl: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/control", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  previewManagedStreamSchedule: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/preview", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  revealManagedStreamInputKeys: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/keys/reveal", pathParams: ["projectId", "instanceId", "inputId"], query: [], body: "empty" },
+  rotateManagedStreamInputKey: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/keys/rotate", pathParams: ["projectId", "instanceId", "inputId"], query: [], body: "json" },
+  rotateManagedStreamPlaybackKey: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/:keyId/rotate", pathParams: ["projectId", "instanceId", "keyId"], query: [], body: "empty" },
+  testManagedStreamWebhook: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/test", pathParams: ["projectId", "instanceId", "webhookId"], query: [], body: "empty" },
   updateManagedInstance: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/update", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
   updateManagedInstanceAlerts: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/alerts/update", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
   updateManagedInstanceAllowlist: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/network/allowlist/update", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
@@ -2281,6 +4773,17 @@ export const MANAGED_OPERATIONS = {
   updateManagedRealtimeApp: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/update", pathParams: ["projectId", "instanceId", "appId"], query: [], body: "json" },
   updateManagedRealtimeAppSettings: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/settings/update", pathParams: ["projectId", "instanceId", "appId"], query: [], body: "json" },
   updateManagedRealtimeWebhook: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/:webhookId/update", pathParams: ["projectId", "instanceId", "appId", "webhookId"], query: [], body: "json" },
+  updateManagedStreamChannel: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/update", pathParams: ["projectId", "instanceId", "channelId"], query: [], body: "json" },
+  updateManagedStreamDestination: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/update", pathParams: ["projectId", "instanceId", "destinationId"], query: [], body: "json" },
+  updateManagedStreamGraphic: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/:graphicId/update", pathParams: ["projectId", "instanceId", "graphicId"], query: [], body: "json" },
+  updateManagedStreamInput: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/update", pathParams: ["projectId", "instanceId", "inputId"], query: [], body: "json" },
+  updateManagedStreamMixer: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/update", pathParams: ["projectId", "instanceId", "mixerId"], query: [], body: "json" },
+  updateManagedStreamPlaylist: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/update", pathParams: ["projectId", "instanceId", "playlistId"], query: [], body: "json" },
+  updateManagedStreamSchedule: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/update", pathParams: ["projectId", "instanceId", "scheduleId"], query: [], body: "json" },
+  updateManagedStreamSettings: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/settings/update", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  updateManagedStreamWebhook: { method: "PUT", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/update", pathParams: ["projectId", "instanceId", "webhookId"], query: [], body: "json" },
+  uploadManagedStreamGraphic: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/upload", pathParams: ["projectId", "instanceId"], query: [], body: "json" },
+  verifyManagedStreamDomain: { method: "POST", path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/:domainId/verify", pathParams: ["projectId", "instanceId", "domainId"], query: [], body: "empty" },
 } as const;
 
 export type ManagedOperationId = keyof typeof MANAGED_OPERATIONS;
@@ -2298,6 +4801,20 @@ export interface ManagedOperationTypes {
   createManagedRealtimeInspectorToken: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedRealtimeInspectorTokenBody; response: CreateManagedRealtimeInspectorTokenResponse };
   createManagedRealtimeKey: { params: { projectId: string; instanceId: string; appId: string }; query: undefined; body: undefined; response: CreateManagedRealtimeKeyResponse };
   createManagedRealtimeWebhook: { params: { projectId: string; instanceId: string; appId: string }; query: undefined; body: CreateManagedRealtimeWebhookBody; response: CreateManagedRealtimeWebhookResponse };
+  createManagedStreamBinding: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamBindingBody; response: CreateManagedStreamBindingResponse };
+  createManagedStreamChannel: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamChannelBody; response: CreateManagedStreamChannelResponse };
+  createManagedStreamClip: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamClipBody; response: CreateManagedStreamClipResponse };
+  createManagedStreamDestination: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamDestinationBody; response: CreateManagedStreamDestinationResponse };
+  createManagedStreamDomain: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamDomainBody; response: CreateManagedStreamDomainResponse };
+  createManagedStreamInput: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamInputBody; response: CreateManagedStreamInputResponse };
+  createManagedStreamMixer: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamMixerBody; response: CreateManagedStreamMixerResponse };
+  createManagedStreamPlaybackKey: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamPlaybackKeyBody; response: CreateManagedStreamPlaybackKeyResponse };
+  createManagedStreamPlaybackToken: { params: { projectId: string; instanceId: string; channelId: string }; query: undefined; body: CreateManagedStreamPlaybackTokenBody; response: CreateManagedStreamPlaybackTokenResponse };
+  createManagedStreamPlaylist: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamPlaylistBody; response: CreateManagedStreamPlaylistResponse };
+  createManagedStreamSchedule: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamScheduleBody; response: CreateManagedStreamScheduleResponse };
+  createManagedStreamStorageLink: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamStorageLinkBody; response: CreateManagedStreamStorageLinkResponse };
+  createManagedStreamStudioToken: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamStudioTokenBody; response: CreateManagedStreamStudioTokenResponse };
+  createManagedStreamWebhook: { params: { projectId: string; instanceId: string }; query: undefined; body: CreateManagedStreamWebhookBody; response: CreateManagedStreamWebhookResponse };
   deleteManagedInstance: { params: { projectId: string; instanceId: string }; query: DeleteManagedInstanceQuery; body: undefined; response: DeleteManagedInstanceResponse };
   deleteManagedInstanceBinding: { params: { projectId: string; instanceId: string; bindingId: string }; query: DeleteManagedInstanceBindingQuery; body: undefined; response: DeleteManagedInstanceBindingResponse };
   deleteManagedInstanceDatabase: { params: { projectId: string; instanceId: string; databaseName: string }; query: DeleteManagedInstanceDatabaseQuery; body: undefined; response: DeleteManagedInstanceDatabaseResponse };
@@ -2307,6 +4824,19 @@ export interface ManagedOperationTypes {
   deleteManagedRealtimeApp: { params: { projectId: string; instanceId: string; appId: string }; query: DeleteManagedRealtimeAppQuery; body: undefined; response: DeleteManagedRealtimeAppResponse };
   deleteManagedRealtimeBinding: { params: { projectId: string; instanceId: string; bindingId: string }; query: DeleteManagedRealtimeBindingQuery; body: undefined; response: DeleteManagedRealtimeBindingResponse };
   deleteManagedRealtimeWebhook: { params: { projectId: string; instanceId: string; appId: string; webhookId: string }; query: undefined; body: undefined; response: DeleteManagedRealtimeWebhookResponse };
+  deleteManagedStreamBinding: { params: { projectId: string; instanceId: string; bindingId: string }; query: DeleteManagedStreamBindingQuery; body: undefined; response: DeleteManagedStreamBindingResponse };
+  deleteManagedStreamChannel: { params: { projectId: string; instanceId: string; channelId: string }; query: undefined; body: undefined; response: DeleteManagedStreamChannelResponse };
+  deleteManagedStreamDestination: { params: { projectId: string; instanceId: string; destinationId: string }; query: undefined; body: undefined; response: DeleteManagedStreamDestinationResponse };
+  deleteManagedStreamDomain: { params: { projectId: string; instanceId: string; domainId: string }; query: undefined; body: undefined; response: DeleteManagedStreamDomainResponse };
+  deleteManagedStreamGraphic: { params: { projectId: string; instanceId: string; graphicId: string }; query: undefined; body: undefined; response: DeleteManagedStreamGraphicResponse };
+  deleteManagedStreamInput: { params: { projectId: string; instanceId: string; inputId: string }; query: undefined; body: undefined; response: DeleteManagedStreamInputResponse };
+  deleteManagedStreamMixer: { params: { projectId: string; instanceId: string; mixerId: string }; query: undefined; body: undefined; response: DeleteManagedStreamMixerResponse };
+  deleteManagedStreamPlaybackKey: { params: { projectId: string; instanceId: string; keyId: string }; query: undefined; body: undefined; response: DeleteManagedStreamPlaybackKeyResponse };
+  deleteManagedStreamPlaylist: { params: { projectId: string; instanceId: string; playlistId: string }; query: undefined; body: undefined; response: DeleteManagedStreamPlaylistResponse };
+  deleteManagedStreamRecording: { params: { projectId: string; instanceId: string; recordingId: string }; query: DeleteManagedStreamRecordingQuery; body: undefined; response: DeleteManagedStreamRecordingResponse };
+  deleteManagedStreamSchedule: { params: { projectId: string; instanceId: string; scheduleId: string }; query: undefined; body: undefined; response: DeleteManagedStreamScheduleResponse };
+  deleteManagedStreamStorageLink: { params: { projectId: string; instanceId: string; linkId: string }; query: undefined; body: undefined; response: DeleteManagedStreamStorageLinkResponse };
+  deleteManagedStreamWebhook: { params: { projectId: string; instanceId: string; webhookId: string }; query: undefined; body: undefined; response: DeleteManagedStreamWebhookResponse };
   getManagedCatalog: { params: Record<string, never>; query: undefined; body: undefined; response: GetManagedCatalogResponse };
   getManagedClientIp: { params: Record<string, never>; query: undefined; body: undefined; response: GetManagedClientIpResponse };
   getManagedInstance: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: GetManagedInstanceResponse };
@@ -2350,7 +4880,36 @@ export interface ManagedOperationTypes {
   getManagedRealtimeUsage: { params: { projectId: string; instanceId: string }; query: GetManagedRealtimeUsageQuery; body: undefined; response: GetManagedRealtimeUsageResponse };
   getManagedRealtimeWebhookDeliveries: { params: { projectId: string; instanceId: string; appId: string }; query: GetManagedRealtimeWebhookDeliveriesQuery; body: undefined; response: GetManagedRealtimeWebhookDeliveriesResponse };
   getManagedRealtimeWebhooks: { params: { projectId: string; instanceId: string; appId: string }; query: undefined; body: undefined; response: GetManagedRealtimeWebhooksResponse };
+  getManagedStreamChannel: { params: { projectId: string; instanceId: string; channelId: string }; query: undefined; body: undefined; response: GetManagedStreamChannelResponse };
+  getManagedStreamChannelPlayback: { params: { projectId: string; instanceId: string; channelId: string }; query: undefined; body: undefined; response: GetManagedStreamChannelPlaybackResponse };
+  getManagedStreamDestination: { params: { projectId: string; instanceId: string; destinationId: string }; query: undefined; body: undefined; response: GetManagedStreamDestinationResponse };
+  getManagedStreamInput: { params: { projectId: string; instanceId: string; inputId: string }; query: undefined; body: undefined; response: GetManagedStreamInputResponse };
+  getManagedStreamLive: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: GetManagedStreamLiveResponse };
+  getManagedStreamMixer: { params: { projectId: string; instanceId: string; mixerId: string }; query: undefined; body: undefined; response: GetManagedStreamMixerResponse };
+  getManagedStreamPlaylist: { params: { projectId: string; instanceId: string; playlistId: string }; query: undefined; body: undefined; response: GetManagedStreamPlaylistResponse };
+  getManagedStreamSchedule: { params: { projectId: string; instanceId: string; scheduleId: string }; query: undefined; body: undefined; response: GetManagedStreamScheduleResponse };
+  getManagedStreamServer: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: GetManagedStreamServerResponse };
+  getManagedStreamStats: { params: { projectId: string; instanceId: string }; query: GetManagedStreamStatsQuery; body: undefined; response: GetManagedStreamStatsResponse };
+  getManagedStreamUsage: { params: { projectId: string; instanceId: string }; query: GetManagedStreamUsageQuery; body: undefined; response: GetManagedStreamUsageResponse };
   getManagedWorkspace: { params: { projectId: string }; query: undefined; body: undefined; response: GetManagedWorkspaceResponse };
+  getStreamPriceEstimate: { params: Record<string, never>; query: GetStreamPriceEstimateQuery; body: undefined; response: GetStreamPriceEstimateResponse };
+  listManagedStreamBindings: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamBindingsResponse };
+  listManagedStreamChannels: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamChannelsResponse };
+  listManagedStreamDestinations: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamDestinationsResponse };
+  listManagedStreamDomains: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamDomainsResponse };
+  listManagedStreamEvents: { params: { projectId: string; instanceId: string }; query: ListManagedStreamEventsQuery; body: undefined; response: ListManagedStreamEventsResponse };
+  listManagedStreamGraphics: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamGraphicsResponse };
+  listManagedStreamInputs: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamInputsResponse };
+  listManagedStreamMixers: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamMixersResponse };
+  listManagedStreamPlaybackKeys: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamPlaybackKeysResponse };
+  listManagedStreamPlaylists: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamPlaylistsResponse };
+  listManagedStreamRecordings: { params: { projectId: string; instanceId: string }; query: ListManagedStreamRecordingsQuery; body: undefined; response: ListManagedStreamRecordingsResponse };
+  listManagedStreamScheduleRuns: { params: { projectId: string; instanceId: string; scheduleId: string }; query: ListManagedStreamScheduleRunsQuery; body: undefined; response: ListManagedStreamScheduleRunsResponse };
+  listManagedStreamSchedules: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamSchedulesResponse };
+  listManagedStreamStorageAssets: { params: { projectId: string; instanceId: string; linkId: string }; query: ListManagedStreamStorageAssetsQuery; body: undefined; response: ListManagedStreamStorageAssetsResponse };
+  listManagedStreamStorageLinks: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamStorageLinksResponse };
+  listManagedStreamWebhookDeliveries: { params: { projectId: string; instanceId: string; webhookId: string }; query: ListManagedStreamWebhookDeliveriesQuery; body: undefined; response: ListManagedStreamWebhookDeliveriesResponse };
+  listManagedStreamWebhooks: { params: { projectId: string; instanceId: string }; query: undefined; body: undefined; response: ListManagedStreamWebhooksResponse };
   postManagedInstanceConfigApply: { params: { projectId: string; instanceId: string }; query: undefined; body: PostManagedInstanceConfigApplyBody; response: PostManagedInstanceConfigApplyResponse };
   postManagedInstanceConfigRevert: { params: { projectId: string; instanceId: string }; query: undefined; body: PostManagedInstanceConfigRevertBody; response: PostManagedInstanceConfigRevertResponse };
   postManagedInstanceConfigValidate: { params: { projectId: string; instanceId: string }; query: undefined; body: PostManagedInstanceConfigValidateBody; response: PostManagedInstanceConfigValidateResponse };
@@ -2382,6 +4941,12 @@ export interface ManagedOperationTypes {
   postManagedRealtimeUserTerminate: { params: { projectId: string; instanceId: string; appId: string }; query: undefined; body: PostManagedRealtimeUserTerminateBody; response: PostManagedRealtimeUserTerminateResponse };
   postManagedRealtimeWebhookRedeliver: { params: { projectId: string; instanceId: string; appId: string; deliveryId: string }; query: undefined; body: undefined; response: PostManagedRealtimeWebhookRedeliverResponse };
   postManagedRealtimeWebhookTest: { params: { projectId: string; instanceId: string; appId: string; webhookId: string }; query: undefined; body: undefined; response: PostManagedRealtimeWebhookTestResponse };
+  postManagedStreamControl: { params: { projectId: string; instanceId: string }; query: undefined; body: PostManagedStreamControlBody; response: PostManagedStreamControlResponse };
+  previewManagedStreamSchedule: { params: { projectId: string; instanceId: string }; query: undefined; body: PreviewManagedStreamScheduleBody; response: PreviewManagedStreamScheduleResponse };
+  revealManagedStreamInputKeys: { params: { projectId: string; instanceId: string; inputId: string }; query: undefined; body: undefined; response: RevealManagedStreamInputKeysResponse };
+  rotateManagedStreamInputKey: { params: { projectId: string; instanceId: string; inputId: string }; query: undefined; body: RotateManagedStreamInputKeyBody; response: RotateManagedStreamInputKeyResponse };
+  rotateManagedStreamPlaybackKey: { params: { projectId: string; instanceId: string; keyId: string }; query: undefined; body: undefined; response: RotateManagedStreamPlaybackKeyResponse };
+  testManagedStreamWebhook: { params: { projectId: string; instanceId: string; webhookId: string }; query: undefined; body: undefined; response: TestManagedStreamWebhookResponse };
   updateManagedInstance: { params: { projectId: string; instanceId: string }; query: undefined; body: UpdateManagedInstanceBody; response: UpdateManagedInstanceResponse };
   updateManagedInstanceAlerts: { params: { projectId: string; instanceId: string }; query: undefined; body: UpdateManagedInstanceAlertsBody; response: UpdateManagedInstanceAlertsResponse };
   updateManagedInstanceAllowlist: { params: { projectId: string; instanceId: string }; query: undefined; body: UpdateManagedInstanceAllowlistBody; response: UpdateManagedInstanceAllowlistResponse };
@@ -2391,4 +4956,15 @@ export interface ManagedOperationTypes {
   updateManagedRealtimeApp: { params: { projectId: string; instanceId: string; appId: string }; query: undefined; body: UpdateManagedRealtimeAppBody; response: UpdateManagedRealtimeAppResponse };
   updateManagedRealtimeAppSettings: { params: { projectId: string; instanceId: string; appId: string }; query: undefined; body: UpdateManagedRealtimeAppSettingsBody; response: UpdateManagedRealtimeAppSettingsResponse };
   updateManagedRealtimeWebhook: { params: { projectId: string; instanceId: string; appId: string; webhookId: string }; query: undefined; body: UpdateManagedRealtimeWebhookBody; response: UpdateManagedRealtimeWebhookResponse };
+  updateManagedStreamChannel: { params: { projectId: string; instanceId: string; channelId: string }; query: undefined; body: UpdateManagedStreamChannelBody; response: UpdateManagedStreamChannelResponse };
+  updateManagedStreamDestination: { params: { projectId: string; instanceId: string; destinationId: string }; query: undefined; body: UpdateManagedStreamDestinationBody; response: UpdateManagedStreamDestinationResponse };
+  updateManagedStreamGraphic: { params: { projectId: string; instanceId: string; graphicId: string }; query: undefined; body: UpdateManagedStreamGraphicBody; response: UpdateManagedStreamGraphicResponse };
+  updateManagedStreamInput: { params: { projectId: string; instanceId: string; inputId: string }; query: undefined; body: UpdateManagedStreamInputBody; response: UpdateManagedStreamInputResponse };
+  updateManagedStreamMixer: { params: { projectId: string; instanceId: string; mixerId: string }; query: undefined; body: UpdateManagedStreamMixerBody; response: UpdateManagedStreamMixerResponse };
+  updateManagedStreamPlaylist: { params: { projectId: string; instanceId: string; playlistId: string }; query: undefined; body: UpdateManagedStreamPlaylistBody; response: UpdateManagedStreamPlaylistResponse };
+  updateManagedStreamSchedule: { params: { projectId: string; instanceId: string; scheduleId: string }; query: undefined; body: UpdateManagedStreamScheduleBody; response: UpdateManagedStreamScheduleResponse };
+  updateManagedStreamSettings: { params: { projectId: string; instanceId: string }; query: undefined; body: UpdateManagedStreamSettingsBody; response: UpdateManagedStreamSettingsResponse };
+  updateManagedStreamWebhook: { params: { projectId: string; instanceId: string; webhookId: string }; query: undefined; body: UpdateManagedStreamWebhookBody; response: UpdateManagedStreamWebhookResponse };
+  uploadManagedStreamGraphic: { params: { projectId: string; instanceId: string }; query: undefined; body: UploadManagedStreamGraphicBody; response: UploadManagedStreamGraphicResponse };
+  verifyManagedStreamDomain: { params: { projectId: string; instanceId: string; domainId: string }; query: undefined; body: undefined; response: VerifyManagedStreamDomainResponse };
 }
