@@ -1,4 +1,4 @@
-.PHONY: help install build test clean build-ts test-ts build-go test-go build-realtime test-realtime build-go-realtime test-go-realtime verify-spec generate-managed verify-spec-managed
+.PHONY: help install build test clean build-ts test-ts build-go test-go build-realtime test-realtime build-go-realtime test-go-realtime build-analytics test-analytics build-streams test-streams build-go-streams test-go-streams verify-spec generate-managed verify-spec-managed verify-spec-analytics
 
 help:
 	@echo "Hubfly SDK Monorepo - Available Targets:"
@@ -13,9 +13,16 @@ help:
 	@echo "  make test-realtime     - Test @hubfly/realtime (typecheck + bun test)"
 	@echo "  make build-go-realtime - Build the Go realtime module (packages/go/realtime)"
 	@echo "  make test-go-realtime  - Vet and test the Go realtime module"
+	@echo "  make build-analytics   - Build @hubfly/analytics (packages/analytics), including dist/tracker"
+	@echo "  make test-analytics    - Test @hubfly/analytics (typecheck + bun test)"
+	@echo "  make build-streams     - Build @hubfly/streams (packages/streams)"
+	@echo "  make test-streams      - Test @hubfly/streams (typecheck + bun test)"
+	@echo "  make build-go-streams  - Build the Go streams module (packages/go/streams)"
+	@echo "  make test-go-streams   - Vet and test the Go streams module"
 	@echo "  make verify-spec - Verify SDK alignment against hubfly-dashboard openapi.json"
-	@echo "  make generate-managed    - Regenerate the Managed Services types (TS + Go) from openapi.json"
+	@echo "  make generate-managed    - Regenerate the Managed Services and Web Analytics types (TS + Go) from openapi.json"
 	@echo "  make verify-spec-managed - Strict check: every managed operation covered, generated types in sync"
+	@echo "  make verify-spec-analytics - Strict check: every Web Analytics operation covered, generated types in sync"
 	@echo "  make clean       - Clean build artifacts"
 
 install:
@@ -46,20 +53,43 @@ build-go-realtime:
 test-go-realtime:
 	cd packages/go/realtime && go vet ./... && go test ./...
 
+build-analytics:
+	cd packages/analytics && bun run build
+
+test-analytics:
+	cd packages/analytics && bun run typecheck && bun test
+
+build-streams:
+	cd packages/streams && bun run build
+
+test-streams:
+	cd packages/streams && bun run typecheck && bun test
+
+# packages/go/streams is a nested module too.
+build-go-streams:
+	cd packages/go/streams && go build ./...
+
+test-go-streams:
+	cd packages/go/streams && go vet ./... && go test ./...
+
 verify-spec:
 	bun run scripts/verify-spec-diff.ts
 
-# Managed Services (Databases + Realtime): types and operation tables are
-# generated from hubfly-dashboard/openapi.json (OPENAPI_PATH overrides it).
+# Managed Services (Databases + Realtime) and Web Analytics: types and
+# operation tables are generated from hubfly-dashboard/openapi.json
+# (OPENAPI_PATH overrides it).
 generate-managed:
 	bun run scripts/generate-managed.ts
 
 verify-spec-managed:
 	bun run scripts/verify-spec-diff.ts --scope managed --strict
 
-build: build-ts build-go build-realtime build-go-realtime
+verify-spec-analytics:
+	bun run scripts/verify-spec-diff.ts --scope analytics --strict
 
-test: test-ts test-go test-realtime test-go-realtime
+build: build-ts build-go build-realtime build-go-realtime build-analytics build-streams build-go-streams
+
+test: test-ts test-go test-realtime test-go-realtime test-analytics test-streams test-go-streams
 
 clean:
-	rm -rf packages/ts/dist packages/ts/node_modules packages/realtime/dist
+	rm -rf packages/ts/dist packages/ts/node_modules packages/realtime/dist packages/analytics/dist packages/streams/dist
