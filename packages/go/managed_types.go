@@ -42,23 +42,24 @@ type CreateManagedInstanceBindingResponse = ManagedDatabaseBinding
 
 // CreateManagedInstanceBody is an object of the Managed API (first seen in createManagedInstance body).
 type CreateManagedInstanceBody struct {
-	Name                string                          `json:"name"`
-	Service             string                          `json:"service,omitempty"` // One of "database", "realtime".
-	Engine              string                          `json:"engine,omitempty"`  // One of "realtime", "postgresql", "mysql", "libsql".
-	Version             string                          `json:"version,omitempty"`
-	Size                ManagedInstanceSizeInput        `json:"size"`
-	PublicAccess        *bool                           `json:"publicAccess,omitempty"`
-	Allowlist           []ManagedAllowlistEntryInput    `json:"allowlist,omitempty"`
-	DefaultDatabaseName string                          `json:"defaultDatabaseName,omitempty"`
-	AdminUsername       string                          `json:"adminUsername,omitempty"`
-	InitialApp          *ManagedRealtimeInitialAppInput `json:"initialApp,omitempty"`
-	QuotedHourlyTotal   float64                         `json:"quotedHourlyTotal"`
-	IdempotencyKey      string                          `json:"idempotencyKey"`
+	Name                string                            `json:"name"`
+	Service             string                            `json:"service,omitempty"` // One of "database", "realtime", "stream".
+	Engine              string                            `json:"engine,omitempty"`  // One of "realtime", "stream", "postgresql", "mysql", "libsql".
+	Version             string                            `json:"version,omitempty"`
+	Size                *ManagedInstanceSizeInput         `json:"size,omitempty"`
+	PublicAccess        *bool                             `json:"publicAccess,omitempty"`
+	Allowlist           []ManagedAllowlistEntryInput      `json:"allowlist,omitempty"`
+	DefaultDatabaseName string                            `json:"defaultDatabaseName,omitempty"`
+	AdminUsername       string                            `json:"adminUsername,omitempty"`
+	InitialApp          *ManagedRealtimeInitialAppInput   `json:"initialApp,omitempty"`
+	Stream              *CreateManagedInstanceStreamInput `json:"stream,omitempty"`
+	QuotedHourlyTotal   float64                           `json:"quotedHourlyTotal"`
+	IdempotencyKey      string                            `json:"idempotencyKey"`
 }
 
 // MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
 func (v CreateManagedInstanceBody) MarshalJSON() ([]byte, error) {
-	m := make(map[string]any, 12)
+	m := make(map[string]any, 13)
 	m["name"] = v.Name
 	if v.Service != "" {
 		m["service"] = v.Service
@@ -69,7 +70,9 @@ func (v CreateManagedInstanceBody) MarshalJSON() ([]byte, error) {
 	if v.Version != "" {
 		m["version"] = v.Version
 	}
-	m["size"] = v.Size
+	if v.Size != nil {
+		m["size"] = v.Size
+	}
 	if v.PublicAccess != nil {
 		m["publicAccess"] = v.PublicAccess
 	}
@@ -84,6 +87,9 @@ func (v CreateManagedInstanceBody) MarshalJSON() ([]byte, error) {
 	}
 	if v.InitialApp != nil {
 		m["initialApp"] = v.InitialApp
+	}
+	if v.Stream != nil {
+		m["stream"] = v.Stream
 	}
 	m["quotedHourlyTotal"] = v.QuotedHourlyTotal
 	m["idempotencyKey"] = v.IdempotencyKey
@@ -143,12 +149,123 @@ type CreateManagedInstanceExportResponse struct {
 	OperationID string          `json:"operationId"`
 }
 
+// CreateManagedInstanceInstanceStream is an object of the Managed API (first seen in createManagedInstance response.instance.stream).
+type CreateManagedInstanceInstanceStream struct {
+	Host           string                                     `json:"host"`
+	SpeedMbps      float64                                    `json:"speedMbps"`
+	ProcessingMbps float64                                    `json:"processingMbps"`
+	WebrtcSessions float64                                    `json:"webrtcSessions"`
+	Timezone       string                                     `json:"timezone"`
+	Sync           CreateManagedInstanceInstanceStreamSync    `json:"sync"`
+	Billing        CreateManagedInstanceInstanceStreamBilling `json:"billing"`
+	Ingest         CreateManagedInstanceInstanceStreamIngest  `json:"ingest"`
+	Live           *CreateManagedInstanceInstanceStreamLive   `json:"live"`
+	Price          CreateManagedInstanceInstanceStreamPrice   `json:"price"`
+}
+
+// CreateManagedInstanceInstanceStreamBilling is an object of the Managed API (first seen in createManagedInstance response.instance.stream.billing).
+type CreateManagedInstanceInstanceStreamBilling struct {
+	Allowed bool    `json:"allowed"`
+	Reason  *string `json:"reason"` // One of "suspended", "balance", "spend_cap".
+}
+
+// CreateManagedInstanceInstanceStreamIngest is an object of the Managed API (first seen in createManagedInstance response.instance.stream.ingest).
+type CreateManagedInstanceInstanceStreamIngest struct {
+	Rtmp        string `json:"rtmp"`
+	Rtmps       string `json:"rtmps"`
+	Srt         string `json:"srt"`
+	WhipBase    string `json:"whipBase"`
+	IcecastBase string `json:"icecastBase"`
+}
+
+// CreateManagedInstanceInstanceStreamLive is an object of the Managed API (first seen in createManagedInstance response.instance.stream.live).
+type CreateManagedInstanceInstanceStreamLive struct {
+	InputsLive   float64 `json:"inputsLive"`
+	ChannelsLive float64 `json:"channelsLive"`
+	Viewers      float64 `json:"viewers"`
+	EgressMbps   float64 `json:"egressMbps"`
+	At           string  `json:"at"`
+}
+
+// CreateManagedInstanceInstanceStreamPrice is an object of the Managed API (first seen in createManagedInstance response.instance.stream.price).
+type CreateManagedInstanceInstanceStreamPrice struct {
+	SpeedMicroUsdPerHour float64 `json:"speedMicroUsdPerHour"`
+	SpeedUsdPerMonth     float64 `json:"speedUsdPerMonth"`
+}
+
+// CreateManagedInstanceInstanceStreamSync is an object of the Managed API (first seen in createManagedInstance response.instance.stream.sync).
+type CreateManagedInstanceInstanceStreamSync struct {
+	Generation        float64 `json:"generation"`
+	AppliedGeneration float64 `json:"appliedGeneration"`
+	LastSyncedAt      *string `json:"lastSyncedAt"`
+	LastError         *string `json:"lastError"`
+}
+
 // CreateManagedInstanceResponse is an object of the Managed API (first seen in createManagedInstance response).
 type CreateManagedInstanceResponse struct {
-	Instance    ManagedInstance            `json:"instance"`
-	OperationID string                     `json:"operationId"`
-	Price       ManagedPrice               `json:"price"`
-	InitialApp  *ManagedRealtimeInitialApp `json:"initialApp"`
+	Instance    ManagedInstance              `json:"instance"`
+	OperationID string                       `json:"operationId"`
+	Price       ManagedPrice                 `json:"price"`
+	InitialApp  *ManagedRealtimeInitialApp   `json:"initialApp"`
+	Stream      *CreateManagedInstanceStream `json:"stream,omitempty"`
+}
+
+// CreateManagedInstanceStream is an object of the Managed API (first seen in createManagedInstance response.stream).
+type CreateManagedInstanceStream struct {
+	Host       string                                 `json:"host"`
+	FirstInput *CreateManagedInstanceStreamFirstInput `json:"firstInput,omitempty"`
+}
+
+// CreateManagedInstanceStreamFirstInput is an object of the Managed API (first seen in createManagedInstance response.stream.firstInput).
+type CreateManagedInstanceStreamFirstInput struct {
+	ID   string                                    `json:"id"`
+	Name string                                    `json:"name"`
+	Keys CreateManagedInstanceStreamFirstInputKeys `json:"keys"`
+}
+
+// CreateManagedInstanceStreamFirstInputInput is an object of the Managed API (first seen in createManagedInstance body.stream.firstInput).
+type CreateManagedInstanceStreamFirstInputInput struct {
+	Name string `json:"name"`
+	Kind string `json:"kind,omitempty"` // Always "push".
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedInstanceStreamFirstInputInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["name"] = v.Name
+	if v.Kind != "" {
+		m["kind"] = v.Kind
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedInstanceStreamFirstInputKeys is an object of the Managed API (first seen in createManagedInstance response.stream.firstInput.keys).
+type CreateManagedInstanceStreamFirstInputKeys struct {
+	Primary string `json:"primary"`
+}
+
+// CreateManagedInstanceStreamInput is an object of the Managed API (first seen in createManagedInstance body.stream).
+type CreateManagedInstanceStreamInput struct {
+	SpeedMbps      float64                                     `json:"speedMbps"`
+	ProcessingMbps *float64                                    `json:"processingMbps,omitempty"`
+	Timezone       string                                      `json:"timezone,omitempty"`
+	FirstInput     *CreateManagedInstanceStreamFirstInputInput `json:"firstInput,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedInstanceStreamInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["speedMbps"] = v.SpeedMbps
+	if v.ProcessingMbps != nil {
+		m["processingMbps"] = v.ProcessingMbps
+	}
+	if v.Timezone != "" {
+		m["timezone"] = v.Timezone
+	}
+	if v.FirstInput != nil {
+		m["firstInput"] = v.FirstInput
+	}
+	return json.Marshal(m)
 }
 
 // CreateManagedInstanceTokenBody is an object of the Managed API (first seen in createManagedInstanceToken body).
@@ -327,6 +444,2114 @@ type CreateManagedRealtimeWebhookResponse struct {
 	Sync    ManagedRealtimeSync    `json:"sync"`
 }
 
+// CreateManagedStreamBindingBody is an object of the Managed API (first seen in createManagedStreamBinding body).
+type CreateManagedStreamBindingBody struct {
+	TargetProjectID string `json:"targetProjectId"`
+	PlaybackKeyID   string `json:"playbackKeyId,omitempty"`
+	ChannelID       string `json:"channelId,omitempty"`
+	ClientPrefix    string `json:"clientPrefix,omitempty"` // One of "", "none", "NEXT_PUBLIC_", "VITE_", "PUBLIC_".
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamBindingBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["targetProjectId"] = v.TargetProjectID
+	if v.PlaybackKeyID != "" {
+		m["playbackKeyId"] = v.PlaybackKeyID
+	}
+	if v.ChannelID != "" {
+		m["channelId"] = v.ChannelID
+	}
+	if v.ClientPrefix != "" {
+		m["clientPrefix"] = v.ClientPrefix
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamBindingResponse is an object of the Managed API (first seen in createManagedStreamBinding response).
+type CreateManagedStreamBindingResponse struct {
+	ID                string   `json:"id"`
+	InstanceID        string   `json:"instanceId"`
+	TargetProjectID   string   `json:"targetProjectId"`
+	TargetProjectName string   `json:"targetProjectName"`
+	PlaybackKeyID     *string  `json:"playbackKeyId"`
+	ChannelID         *string  `json:"channelId"`
+	ClientPrefix      string   `json:"clientPrefix"` // One of "none", "NEXT_PUBLIC_", "VITE_", "PUBLIC_".
+	EnvKeys           []string `json:"envKeys"`
+	CreatedAt         string   `json:"createdAt"`
+	UpdatedAt         string   `json:"updatedAt"`
+}
+
+// CreateManagedStreamChannelAccessInput is an object of the Managed API (first seen in createManagedStreamChannel body.access).
+type CreateManagedStreamChannelAccessInput struct {
+	Mode           string   `json:"mode"` // One of "token", "public".
+	AllowedOrigins []string `json:"allowedOrigins"`
+	AllowedCidrs   []string `json:"allowedCidrs"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelAccessInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["mode"] = v.Mode
+	if v.AllowedOrigins == nil {
+		m["allowedOrigins"] = []string{}
+	} else {
+		m["allowedOrigins"] = v.AllowedOrigins
+	}
+	if v.AllowedCidrs == nil {
+		m["allowedCidrs"] = []string{}
+	} else {
+		m["allowedCidrs"] = v.AllowedCidrs
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelBackupInput is an object of the Managed API (first seen in createManagedStreamChannel body.backup).
+type CreateManagedStreamChannelBackupInput struct {
+	Type string `json:"type"` // One of "input", "mixer", "playlist".
+	Ref  string `json:"ref"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelBackupInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["type"] = v.Type
+	m["ref"] = v.Ref
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelBody is an object of the Managed API (first seen in createManagedStreamChannel body).
+type CreateManagedStreamChannelBody struct {
+	Source     *CreateManagedStreamChannelSourceInput    `json:"source,omitempty"`
+	Access     *CreateManagedStreamChannelAccessInput    `json:"access,omitempty"`
+	Backup     *CreateManagedStreamChannelBackupInput    `json:"backup,omitempty"`
+	Recording  *CreateManagedStreamChannelRecordingInput `json:"recording,omitempty"`
+	Playback   *CreateManagedStreamChannelPlaybackInput  `json:"playback,omitempty"`
+	Failover   *CreateManagedStreamChannelFailoverInput  `json:"failover,omitempty"`
+	Encoding   *CreateManagedStreamChannelEncodingInput  `json:"encoding,omitempty"`
+	Latency    string                                    `json:"latency,omitempty"` // One of "low", "standard", "ultra".
+	DvrMinutes *float64                                  `json:"dvrMinutes,omitempty"`
+	MaxViewers *float64                                  `json:"maxViewers,omitempty"`
+	Name       string                                    `json:"name"`
+	Enabled    *bool                                     `json:"enabled,omitempty"`
+	Position   *float64                                  `json:"position,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 13)
+	if v.Source != nil {
+		m["source"] = v.Source
+	}
+	if v.Access != nil {
+		m["access"] = v.Access
+	}
+	if v.Backup != nil {
+		m["backup"] = v.Backup
+	}
+	if v.Recording != nil {
+		m["recording"] = v.Recording
+	}
+	if v.Playback != nil {
+		m["playback"] = v.Playback
+	}
+	if v.Failover != nil {
+		m["failover"] = v.Failover
+	}
+	if v.Encoding != nil {
+		m["encoding"] = v.Encoding
+	}
+	if v.Latency != "" {
+		m["latency"] = v.Latency
+	}
+	if v.DvrMinutes != nil {
+		m["dvrMinutes"] = v.DvrMinutes
+	}
+	if v.MaxViewers != nil {
+		m["maxViewers"] = v.MaxViewers
+	}
+	m["name"] = v.Name
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	if v.Position != nil {
+		m["position"] = v.Position
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelChannel is an object of the Managed API (first seen in createManagedStreamChannel response.channel).
+type CreateManagedStreamChannelChannel struct {
+	ID             string                                     `json:"id"`
+	Name           string                                     `json:"name"`
+	Enabled        bool                                       `json:"enabled"`
+	Source         CreateManagedStreamChannelChannelSource    `json:"source"`
+	Access         CreateManagedStreamChannelChannelAccess    `json:"access"`
+	Backup         *CreateManagedStreamChannelChannelBackup   `json:"backup"`
+	Recording      CreateManagedStreamChannelChannelRecording `json:"recording"`
+	Failover       CreateManagedStreamChannelChannelFailover  `json:"failover"`
+	Encoding       CreateManagedStreamChannelChannelEncoding  `json:"encoding"`
+	Latency        string                                     `json:"latency"` // One of "low", "standard", "ultra".
+	DvrMinutes     float64                                    `json:"dvrMinutes"`
+	MaxViewers     float64                                    `json:"maxViewers"`
+	CreatedAt      string                                     `json:"createdAt"`
+	UpdatedAt      string                                     `json:"updatedAt"`
+	Revision       float64                                    `json:"revision"`
+	Position       float64                                    `json:"position"`
+	ProcessingMbps float64                                    `json:"processingMbps"`
+	Playback       CreateManagedStreamChannelChannelPlayback  `json:"playback"`
+}
+
+// CreateManagedStreamChannelChannelAccess is an object of the Managed API (first seen in createManagedStreamChannel response.channel.access).
+type CreateManagedStreamChannelChannelAccess struct {
+	Mode           string   `json:"mode"` // One of "token", "public".
+	AllowedOrigins []string `json:"allowedOrigins"`
+	AllowedCidrs   []string `json:"allowedCidrs"`
+}
+
+// CreateManagedStreamChannelChannelBackup is an object of the Managed API (first seen in createManagedStreamChannel response.channel.backup).
+type CreateManagedStreamChannelChannelBackup struct {
+	Type string `json:"type"` // One of "input", "mixer", "playlist".
+	Ref  string `json:"ref"`
+}
+
+// CreateManagedStreamChannelChannelEncoding is an object of the Managed API (first seen in createManagedStreamChannel response.channel.encoding).
+type CreateManagedStreamChannelChannelEncoding struct {
+	Mode          string                                                 `json:"mode"` // One of "passthrough", "ladder".
+	IncludeSource bool                                                   `json:"includeSource"`
+	Renditions    []CreateManagedStreamChannelChannelEncodingRendition   `json:"renditions"`
+	AudioOutputs  []CreateManagedStreamChannelChannelEncodingAudioOutput `json:"audioOutputs"`
+}
+
+// CreateManagedStreamChannelChannelEncodingAudioOutput is an object of the Managed API (first seen in createManagedStreamChannel response.channel.encoding.audioOutputs.audioOutput).
+type CreateManagedStreamChannelChannelEncodingAudioOutput struct {
+	Name        string  `json:"name"`
+	Codec       string  `json:"codec"` // One of "aac", "mp3", "opus".
+	BitrateKbps float64 `json:"bitrateKbps"`
+}
+
+// CreateManagedStreamChannelChannelEncodingRendition is an object of the Managed API (first seen in createManagedStreamChannel response.channel.encoding.renditions.rendition).
+type CreateManagedStreamChannelChannelEncodingRendition struct {
+	Name             string  `json:"name"`
+	Codec            string  `json:"codec"` // Always "h264".
+	Width            float64 `json:"width"`
+	Height           float64 `json:"height"`
+	Fps              float64 `json:"fps"`
+	VideoBitrateKbps float64 `json:"videoBitrateKbps"`
+	AudioBitrateKbps float64 `json:"audioBitrateKbps"`
+}
+
+// CreateManagedStreamChannelChannelFailover is an object of the Managed API (first seen in createManagedStreamChannel response.channel.failover).
+type CreateManagedStreamChannelChannelFailover struct {
+	AfterMs         float64 `json:"afterMs"`
+	Slate           *string `json:"slate"`
+	ReturnToPrimary bool    `json:"returnToPrimary"`
+}
+
+// CreateManagedStreamChannelChannelPlayback is an object of the Managed API (first seen in createManagedStreamChannel response.channel.playback).
+type CreateManagedStreamChannelChannelPlayback struct {
+	Hls      bool                                                   `json:"hls"`
+	LlHls    bool                                                   `json:"llHls"`
+	Webrtc   bool                                                   `json:"webrtc"`
+	Icecast  []CreateManagedStreamChannelChannelPlaybackIcecastItem `json:"icecast"`
+	RtmpPull bool                                                   `json:"rtmpPull"`
+	SrtPull  bool                                                   `json:"srtPull"`
+	URLs     *CreateManagedStreamChannelChannelPlaybackUrls         `json:"urls"`
+}
+
+// CreateManagedStreamChannelChannelPlaybackIcecastItem is an object of the Managed API (first seen in createManagedStreamChannel response.channel.playback.icecast.icecastItem).
+type CreateManagedStreamChannelChannelPlaybackIcecastItem struct {
+	Format      string  `json:"format"` // One of "aac", "mp3", "opus".
+	BitrateKbps float64 `json:"bitrateKbps"`
+}
+
+// CreateManagedStreamChannelChannelPlaybackUrls is an object of the Managed API (first seen in createManagedStreamChannel response.channel.playback.urls).
+type CreateManagedStreamChannelChannelPlaybackUrls struct {
+	Hls      string                                                   `json:"hls"`
+	Whep     string                                                   `json:"whep"`
+	Embed    string                                                   `json:"embed"`
+	Thumb    string                                                   `json:"thumb"`
+	Status   string                                                   `json:"status"`
+	Audio    []CreateManagedStreamChannelChannelPlaybackUrlsAudioItem `json:"audio"`
+	RtmpPull string                                                   `json:"rtmpPull,omitempty"`
+	SrtPull  string                                                   `json:"srtPull,omitempty"`
+}
+
+// CreateManagedStreamChannelChannelPlaybackUrlsAudioItem is an object of the Managed API (first seen in createManagedStreamChannel response.channel.playback.urls.audio.audioItem).
+type CreateManagedStreamChannelChannelPlaybackUrlsAudioItem struct {
+	Format string `json:"format"` // One of "aac", "mp3", "opus".
+	URL    string `json:"url"`
+}
+
+// CreateManagedStreamChannelChannelRecording is an object of the Managed API (first seen in createManagedStreamChannel response.channel.recording).
+type CreateManagedStreamChannelChannelRecording struct {
+	Enabled       bool    `json:"enabled"`
+	StorageLink   string  `json:"storageLink"`
+	Prefix        string  `json:"prefix"`
+	SplitMinutes  float64 `json:"splitMinutes"`
+	RegisterAsset bool    `json:"registerAsset"`
+}
+
+// CreateManagedStreamChannelChannelSource is an object of the Managed API (first seen in createManagedStreamChannel response.channel.source).
+type CreateManagedStreamChannelChannelSource struct {
+	Type string `json:"type"` // One of "input", "mixer", "playlist".
+	Ref  string `json:"ref"`
+}
+
+// CreateManagedStreamChannelEncodingAudioOutputInput is an object of the Managed API (first seen in createManagedStreamChannel body.encoding.audioOutputs.audioOutput).
+type CreateManagedStreamChannelEncodingAudioOutputInput struct {
+	Name        string  `json:"name"`
+	Codec       string  `json:"codec"` // One of "aac", "mp3", "opus".
+	BitrateKbps float64 `json:"bitrateKbps"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelEncodingAudioOutputInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["name"] = v.Name
+	m["codec"] = v.Codec
+	m["bitrateKbps"] = v.BitrateKbps
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelEncodingInput is an object of the Managed API (first seen in createManagedStreamChannel body.encoding).
+type CreateManagedStreamChannelEncodingInput struct {
+	Mode          string                                               `json:"mode"` // One of "passthrough", "ladder".
+	IncludeSource bool                                                 `json:"includeSource"`
+	Renditions    []CreateManagedStreamChannelEncodingRenditionInput   `json:"renditions"`
+	AudioOutputs  []CreateManagedStreamChannelEncodingAudioOutputInput `json:"audioOutputs"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelEncodingInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["mode"] = v.Mode
+	m["includeSource"] = v.IncludeSource
+	if v.Renditions == nil {
+		m["renditions"] = []CreateManagedStreamChannelEncodingRenditionInput{}
+	} else {
+		m["renditions"] = v.Renditions
+	}
+	if v.AudioOutputs == nil {
+		m["audioOutputs"] = []CreateManagedStreamChannelEncodingAudioOutputInput{}
+	} else {
+		m["audioOutputs"] = v.AudioOutputs
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelEncodingRenditionInput is an object of the Managed API (first seen in createManagedStreamChannel body.encoding.renditions.rendition).
+type CreateManagedStreamChannelEncodingRenditionInput struct {
+	Name             string  `json:"name"`
+	Codec            string  `json:"codec"` // Always "h264".
+	Width            float64 `json:"width"`
+	Height           float64 `json:"height"`
+	Fps              float64 `json:"fps"`
+	VideoBitrateKbps float64 `json:"videoBitrateKbps"`
+	AudioBitrateKbps float64 `json:"audioBitrateKbps"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelEncodingRenditionInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 7)
+	m["name"] = v.Name
+	m["codec"] = v.Codec
+	m["width"] = v.Width
+	m["height"] = v.Height
+	m["fps"] = v.Fps
+	m["videoBitrateKbps"] = v.VideoBitrateKbps
+	m["audioBitrateKbps"] = v.AudioBitrateKbps
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelFailoverInput is an object of the Managed API (first seen in createManagedStreamChannel body.failover).
+type CreateManagedStreamChannelFailoverInput struct {
+	AfterMs         float64 `json:"afterMs"`
+	Slate           *string `json:"slate"`
+	ReturnToPrimary bool    `json:"returnToPrimary"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelFailoverInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["afterMs"] = v.AfterMs
+	m["slate"] = v.Slate
+	m["returnToPrimary"] = v.ReturnToPrimary
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelPlaybackIcecastItemInput is an object of the Managed API (first seen in createManagedStreamChannel body.playback.icecast.icecastItem).
+type CreateManagedStreamChannelPlaybackIcecastItemInput struct {
+	Format      string  `json:"format"` // One of "aac", "mp3", "opus".
+	BitrateKbps float64 `json:"bitrateKbps"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelPlaybackIcecastItemInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["format"] = v.Format
+	m["bitrateKbps"] = v.BitrateKbps
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelPlaybackInput is an object of the Managed API (first seen in createManagedStreamChannel body.playback).
+type CreateManagedStreamChannelPlaybackInput struct {
+	Hls      bool                                                 `json:"hls"`
+	LlHls    bool                                                 `json:"llHls"`
+	Webrtc   bool                                                 `json:"webrtc"`
+	Icecast  []CreateManagedStreamChannelPlaybackIcecastItemInput `json:"icecast"`
+	RtmpPull bool                                                 `json:"rtmpPull"`
+	SrtPull  bool                                                 `json:"srtPull"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelPlaybackInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 6)
+	m["hls"] = v.Hls
+	m["llHls"] = v.LlHls
+	m["webrtc"] = v.Webrtc
+	if v.Icecast == nil {
+		m["icecast"] = []CreateManagedStreamChannelPlaybackIcecastItemInput{}
+	} else {
+		m["icecast"] = v.Icecast
+	}
+	m["rtmpPull"] = v.RtmpPull
+	m["srtPull"] = v.SrtPull
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelRecordingInput is an object of the Managed API (first seen in createManagedStreamChannel body.recording).
+type CreateManagedStreamChannelRecordingInput struct {
+	Enabled       bool    `json:"enabled"`
+	StorageLink   string  `json:"storageLink"`
+	Prefix        string  `json:"prefix"`
+	SplitMinutes  float64 `json:"splitMinutes"`
+	RegisterAsset bool    `json:"registerAsset"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelRecordingInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 5)
+	m["enabled"] = v.Enabled
+	m["storageLink"] = v.StorageLink
+	m["prefix"] = v.Prefix
+	m["splitMinutes"] = v.SplitMinutes
+	m["registerAsset"] = v.RegisterAsset
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelResponse is an object of the Managed API (first seen in createManagedStreamChannel response).
+type CreateManagedStreamChannelResponse struct {
+	Channel CreateManagedStreamChannelChannel `json:"channel"`
+	Sync    CreateManagedStreamChannelSync    `json:"sync"`
+}
+
+// CreateManagedStreamChannelSourceInput is an object of the Managed API (first seen in createManagedStreamChannel body.source).
+type CreateManagedStreamChannelSourceInput struct {
+	Type string `json:"type"` // One of "input", "mixer", "playlist".
+	Ref  string `json:"ref"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamChannelSourceInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["type"] = v.Type
+	m["ref"] = v.Ref
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamChannelSync is an object of the Managed API (first seen in createManagedStreamChannel response.sync).
+type CreateManagedStreamChannelSync struct {
+	Status     string                                  `json:"status"` // One of "pending", "applied".
+	Generation float64                                 `json:"generation"`
+	Error      *string                                 `json:"error"`
+	Warnings   []CreateManagedStreamChannelSyncWarning `json:"warnings"`
+}
+
+// CreateManagedStreamChannelSyncWarning is an object of the Managed API (first seen in createManagedStreamChannel response.sync.warnings.warning).
+type CreateManagedStreamChannelSyncWarning struct {
+	Path    string `json:"path"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// CreateManagedStreamClipBody is an object of the Managed API (first seen in createManagedStreamClip body).
+type CreateManagedStreamClipBody struct {
+	ChannelID     string `json:"channelId"`
+	From          string `json:"from"`
+	To            string `json:"to"`
+	Name          string `json:"name"`
+	StorageLinkID string `json:"storageLinkId,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamClipBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 5)
+	m["channelId"] = v.ChannelID
+	m["from"] = v.From
+	m["to"] = v.To
+	m["name"] = v.Name
+	if v.StorageLinkID != "" {
+		m["storageLinkId"] = v.StorageLinkID
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamClipResponse is an object of the Managed API (first seen in createManagedStreamClip response).
+type CreateManagedStreamClipResponse struct {
+	ClipID string `json:"clipId"`
+}
+
+// CreateManagedStreamDestinationBody is an object of the Managed API (first seen in createManagedStreamDestination body).
+type CreateManagedStreamDestinationBody struct {
+	Source        *CreateManagedStreamDestinationSourceInput `json:"source,omitempty"`
+	Protocol      string                                     `json:"protocol,omitempty"` // One of "rtmp", "rtmps", "srt".
+	URL           string                                     `json:"url,omitempty"`
+	Rendition     string                                     `json:"rendition,omitempty"`
+	AutoStart     *bool                                      `json:"autoStart,omitempty"`
+	Name          string                                     `json:"name"`
+	Enabled       *bool                                      `json:"enabled,omitempty"`
+	Platform      string                                     `json:"platform"` // One of "custom", "youtube", "twitch", "facebook", "kick", "x", "linkedin".
+	StreamKey     string                                     `json:"streamKey"`
+	SrtPassphrase *string                                    `json:"srtPassphrase,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamDestinationBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 10)
+	if v.Source != nil {
+		m["source"] = v.Source
+	}
+	if v.Protocol != "" {
+		m["protocol"] = v.Protocol
+	}
+	if v.URL != "" {
+		m["url"] = v.URL
+	}
+	if v.Rendition != "" {
+		m["rendition"] = v.Rendition
+	}
+	if v.AutoStart != nil {
+		m["autoStart"] = v.AutoStart
+	}
+	m["name"] = v.Name
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	m["platform"] = v.Platform
+	m["streamKey"] = v.StreamKey
+	if v.SrtPassphrase != nil {
+		m["srtPassphrase"] = v.SrtPassphrase
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamDestinationDestination is an object of the Managed API (first seen in createManagedStreamDestination response.destination).
+type CreateManagedStreamDestinationDestination struct {
+	ID               string                                          `json:"id"`
+	Name             string                                          `json:"name"`
+	Platform         string                                          `json:"platform"` // One of "custom", "youtube", "twitch", "facebook", "kick", "x", "linkedin".
+	Enabled          bool                                            `json:"enabled"`
+	Source           CreateManagedStreamDestinationDestinationSource `json:"source"`
+	Protocol         string                                          `json:"protocol"` // One of "rtmp", "rtmps", "srt".
+	URL              string                                          `json:"url"`
+	Rendition        string                                          `json:"rendition"`
+	AutoStart        bool                                            `json:"autoStart"`
+	CreatedAt        string                                          `json:"createdAt"`
+	UpdatedAt        string                                          `json:"updatedAt"`
+	Revision         float64                                         `json:"revision"`
+	StreamKeyHint    *string                                         `json:"streamKeyHint"`
+	HasSrtPassphrase bool                                            `json:"hasSrtPassphrase"`
+}
+
+// CreateManagedStreamDestinationDestinationSource is an object of the Managed API (first seen in createManagedStreamDestination response.destination.source).
+type CreateManagedStreamDestinationDestinationSource struct {
+	Type string `json:"type"` // One of "input", "channel".
+	Ref  string `json:"ref"`
+}
+
+// CreateManagedStreamDestinationResponse is an object of the Managed API (first seen in createManagedStreamDestination response).
+type CreateManagedStreamDestinationResponse struct {
+	Destination CreateManagedStreamDestinationDestination `json:"destination"`
+	Sync        CreateManagedStreamChannelSync            `json:"sync"`
+}
+
+// CreateManagedStreamDestinationSourceInput is an object of the Managed API (first seen in createManagedStreamDestination body.source).
+type CreateManagedStreamDestinationSourceInput struct {
+	Type string `json:"type"` // One of "input", "channel".
+	Ref  string `json:"ref"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamDestinationSourceInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["type"] = v.Type
+	m["ref"] = v.Ref
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamDomainBody is an object of the Managed API (first seen in createManagedStreamDomain body).
+type CreateManagedStreamDomainBody struct {
+	Hostname string `json:"hostname"`
+	Purpose  string `json:"purpose,omitempty"` // One of "both", "playback", "ingest".
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamDomainBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["hostname"] = v.Hostname
+	if v.Purpose != "" {
+		m["purpose"] = v.Purpose
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamDomainDomain is an object of the Managed API (first seen in createManagedStreamDomain response.domain).
+type CreateManagedStreamDomainDomain struct {
+	ID              string  `json:"id"`
+	Hostname        string  `json:"hostname"`
+	Purpose         string  `json:"purpose"` // One of "both", "playback", "ingest".
+	Verified        bool    `json:"verified"`
+	VerifiedAt      *string `json:"verifiedAt"`
+	LastCheckAt     *string `json:"lastCheckAt"`
+	LastCheckError  *string `json:"lastCheckError"`
+	FailedChecks    float64 `json:"failedChecks"`
+	CnameTarget     string  `json:"cnameTarget"`
+	Revision        float64 `json:"revision"`
+	CreatedByUserID *string `json:"createdByUserId"`
+	CreatedAt       string  `json:"createdAt"`
+	UpdatedAt       string  `json:"updatedAt"`
+}
+
+// CreateManagedStreamDomainResponse is an object of the Managed API (first seen in createManagedStreamDomain response).
+type CreateManagedStreamDomainResponse struct {
+	Domain      CreateManagedStreamDomainDomain `json:"domain"`
+	CnameTarget string                          `json:"cnameTarget"`
+	Sync        CreateManagedStreamChannelSync  `json:"sync"`
+}
+
+// CreateManagedStreamInputBody is an object of the Managed API (first seen in createManagedStreamInput body).
+type CreateManagedStreamInputBody struct {
+	Name           string                             `json:"name"`
+	Kind           string                             `json:"kind"` // One of "push", "pull".
+	Enabled        *bool                              `json:"enabled,omitempty"`
+	Protocols      []string                           `json:"protocols,omitempty"`
+	BackupKey      *bool                              `json:"backupKey,omitempty"`
+	SrtPassphrase  *string                            `json:"srtPassphrase,omitempty"`
+	Pull           *CreateManagedStreamInputPullInput `json:"pull,omitempty"`
+	MaxBitrateKbps *float64                           `json:"maxBitrateKbps,omitempty"`
+	AllowedCidrs   []string                           `json:"allowedCidrs,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamInputBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 9)
+	m["name"] = v.Name
+	m["kind"] = v.Kind
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	if v.Protocols != nil {
+		m["protocols"] = v.Protocols
+	}
+	if v.BackupKey != nil {
+		m["backupKey"] = v.BackupKey
+	}
+	if v.SrtPassphrase != nil {
+		m["srtPassphrase"] = v.SrtPassphrase
+	}
+	if v.Pull != nil {
+		m["pull"] = v.Pull
+	}
+	if v.MaxBitrateKbps != nil {
+		m["maxBitrateKbps"] = v.MaxBitrateKbps
+	}
+	if v.AllowedCidrs != nil {
+		m["allowedCidrs"] = v.AllowedCidrs
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamInputInput is an object of the Managed API (first seen in createManagedStreamInput response.input).
+type CreateManagedStreamInputInput struct {
+	ID               string                                   `json:"id"`
+	Name             string                                   `json:"name"`
+	Kind             string                                   `json:"kind"` // One of "push", "pull".
+	Enabled          bool                                     `json:"enabled"`
+	Protocols        []string                                 `json:"protocols"`
+	MaxBitrateKbps   float64                                  `json:"maxBitrateKbps"`
+	AllowedCidrs     []string                                 `json:"allowedCidrs"`
+	CreatedAt        string                                   `json:"createdAt"`
+	UpdatedAt        string                                   `json:"updatedAt"`
+	Revision         float64                                  `json:"revision"`
+	KeyHints         CreateManagedStreamInputInputKeyHints    `json:"keyHints"`
+	KeyFingerprints  CreateManagedStreamInputInputKeyHints    `json:"keyFingerprints"`
+	HasSrtPassphrase bool                                     `json:"hasSrtPassphrase"`
+	Pull             *CreateManagedStreamInputInputPull       `json:"pull"`
+	Connection       *CreateManagedStreamInputInputConnection `json:"connection"`
+}
+
+// CreateManagedStreamInputInputConnection is an object of the Managed API (first seen in createManagedStreamInput response.input.connection).
+type CreateManagedStreamInputInputConnection struct {
+	Rtmp    CreateManagedStreamInputInputConnectionRtmp    `json:"rtmp"`
+	Rtmps   CreateManagedStreamInputInputConnectionRtmp    `json:"rtmps"`
+	Srt     CreateManagedStreamInputInputConnectionSrt     `json:"srt"`
+	Whip    CreateManagedStreamInputInputConnectionWhip    `json:"whip"`
+	Icecast CreateManagedStreamInputInputConnectionIcecast `json:"icecast"`
+}
+
+// CreateManagedStreamInputInputConnectionIcecast is an object of the Managed API (first seen in createManagedStreamInput response.input.connection.icecast).
+type CreateManagedStreamInputInputConnectionIcecast struct {
+	URL         string  `json:"url"`
+	Host        string  `json:"host"`
+	Port        float64 `json:"port"`
+	Mount       string  `json:"mount"`
+	Username    string  `json:"username"`
+	Password    string  `json:"password"`
+	HTTPSPutURL string  `json:"httpsPutUrl"`
+}
+
+// CreateManagedStreamInputInputConnectionRtmp is an object of the Managed API (first seen in createManagedStreamInput response.input.connection.rtmp).
+type CreateManagedStreamInputInputConnectionRtmp struct {
+	Server    string `json:"server"`
+	StreamKey string `json:"streamKey"`
+	URL       string `json:"url"`
+}
+
+// CreateManagedStreamInputInputConnectionSrt is an object of the Managed API (first seen in createManagedStreamInput response.input.connection.srt).
+type CreateManagedStreamInputInputConnectionSrt struct {
+	URL        string  `json:"url"`
+	URI        string  `json:"uri"`
+	StreamID   string  `json:"streamId"`
+	Passphrase *string `json:"passphrase"`
+}
+
+// CreateManagedStreamInputInputConnectionWhip is an object of the Managed API (first seen in createManagedStreamInput response.input.connection.whip).
+type CreateManagedStreamInputInputConnectionWhip struct {
+	URL         string `json:"url"`
+	BearerToken string `json:"bearerToken"`
+}
+
+// CreateManagedStreamInputInputKeyHints is an object of the Managed API (first seen in createManagedStreamInput response.input.keyHints).
+type CreateManagedStreamInputInputKeyHints struct {
+	Primary string `json:"primary,omitempty"`
+	Backup  string `json:"backup,omitempty"`
+}
+
+// CreateManagedStreamInputInputPull is an object of the Managed API (first seen in createManagedStreamInput response.input.pull).
+type CreateManagedStreamInputInputPull struct {
+	URLHint   string `json:"urlHint"`
+	Transport string `json:"transport"` // One of "auto", "tcp", "udp".
+	Reconnect bool   `json:"reconnect"`
+}
+
+// CreateManagedStreamInputKeys is an object of the Managed API (first seen in createManagedStreamInput response.keys).
+type CreateManagedStreamInputKeys struct {
+	Primary string `json:"primary"`
+	Backup  string `json:"backup,omitempty"`
+}
+
+// CreateManagedStreamInputPullInput is an object of the Managed API (first seen in createManagedStreamInput body.pull).
+type CreateManagedStreamInputPullInput struct {
+	URL       string `json:"url"`
+	Transport string `json:"transport,omitempty"` // One of "auto", "tcp", "udp".
+	Reconnect *bool  `json:"reconnect,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamInputPullInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["url"] = v.URL
+	if v.Transport != "" {
+		m["transport"] = v.Transport
+	}
+	if v.Reconnect != nil {
+		m["reconnect"] = v.Reconnect
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamInputResponse is an object of the Managed API (first seen in createManagedStreamInput response).
+type CreateManagedStreamInputResponse struct {
+	Input CreateManagedStreamInputInput  `json:"input"`
+	Keys  *CreateManagedStreamInputKeys  `json:"keys"`
+	Sync  CreateManagedStreamChannelSync `json:"sync"`
+}
+
+// CreateManagedStreamMixerBody is an object of the Managed API (first seen in createManagedStreamMixer body).
+type CreateManagedStreamMixerBody struct {
+	Output       *CreateManagedStreamMixerOutputInput     `json:"output,omitempty"`
+	Canvas       *CreateManagedStreamMixerCanvasInput     `json:"canvas,omitempty"`
+	Sources      []CreateManagedStreamMixerSourceInput    `json:"sources,omitempty"`
+	Scenes       []CreateManagedStreamMixerSceneInput     `json:"scenes,omitempty"`
+	DefaultScene string                                   `json:"defaultScene,omitempty"`
+	Transition   *CreateManagedStreamMixerTransitionInput `json:"transition,omitempty"`
+	Name         string                                   `json:"name"`
+	Enabled      *bool                                    `json:"enabled,omitempty"`
+	Preset       string                                   `json:"preset,omitempty"` // One of "vertical", "1080p30", "1080p60", "720p30".
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 9)
+	if v.Output != nil {
+		m["output"] = v.Output
+	}
+	if v.Canvas != nil {
+		m["canvas"] = v.Canvas
+	}
+	if v.Sources != nil {
+		m["sources"] = v.Sources
+	}
+	if v.Scenes != nil {
+		m["scenes"] = v.Scenes
+	}
+	if v.DefaultScene != "" {
+		m["defaultScene"] = v.DefaultScene
+	}
+	if v.Transition != nil {
+		m["transition"] = v.Transition
+	}
+	m["name"] = v.Name
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	if v.Preset != "" {
+		m["preset"] = v.Preset
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerCanvasInput is an object of the Managed API (first seen in createManagedStreamMixer body.canvas).
+type CreateManagedStreamMixerCanvasInput struct {
+	Width      float64 `json:"width"`
+	Height     float64 `json:"height"`
+	Fps        float64 `json:"fps"`
+	Background string  `json:"background"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerCanvasInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["width"] = v.Width
+	m["height"] = v.Height
+	m["fps"] = v.Fps
+	m["background"] = v.Background
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerMixer is an object of the Managed API (first seen in createManagedStreamMixer response.mixer).
+type CreateManagedStreamMixerMixer struct {
+	ID             string                                  `json:"id"`
+	Name           string                                  `json:"name"`
+	Enabled        bool                                    `json:"enabled"`
+	Canvas         CreateManagedStreamMixerMixerCanvas     `json:"canvas"`
+	Output         CreateManagedStreamMixerMixerOutput     `json:"output"`
+	Sources        []CreateManagedStreamMixerMixerSource   `json:"sources"`
+	Scenes         []CreateManagedStreamMixerMixerScene    `json:"scenes"`
+	DefaultScene   string                                  `json:"defaultScene"`
+	Transition     CreateManagedStreamMixerMixerTransition `json:"transition"`
+	CreatedAt      string                                  `json:"createdAt"`
+	UpdatedAt      string                                  `json:"updatedAt"`
+	Revision       float64                                 `json:"revision"`
+	ProcessingMbps float64                                 `json:"processingMbps"`
+}
+
+// CreateManagedStreamMixerMixerCanvas is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.canvas).
+type CreateManagedStreamMixerMixerCanvas struct {
+	Width      float64 `json:"width"`
+	Height     float64 `json:"height"`
+	Fps        float64 `json:"fps"`
+	Background string  `json:"background"`
+}
+
+// CreateManagedStreamMixerMixerOutput is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.output).
+type CreateManagedStreamMixerMixerOutput struct {
+	Codec            string  `json:"codec"` // Always "h264".
+	VideoBitrateKbps float64 `json:"videoBitrateKbps"`
+	AudioBitrateKbps float64 `json:"audioBitrateKbps"`
+}
+
+// CreateManagedStreamMixerMixerScene is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.scenes.scene).
+type CreateManagedStreamMixerMixerScene struct {
+	ID     string                                        `json:"id"`
+	Name   string                                        `json:"name"`
+	Layers []CreateManagedStreamMixerMixerSceneLayer     `json:"layers"`
+	Audio  []CreateManagedStreamMixerMixerSceneAudioItem `json:"audio"`
+}
+
+// CreateManagedStreamMixerMixerSceneAudioItem is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.scenes.scene.audio.audioItem).
+type CreateManagedStreamMixerMixerSceneAudioItem struct {
+	Source string  `json:"source"`
+	GainDb float64 `json:"gainDb"`
+	Muted  bool    `json:"muted"`
+}
+
+// CreateManagedStreamMixerMixerSceneLayer is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.scenes.scene.layers.layer).
+type CreateManagedStreamMixerMixerSceneLayer struct {
+	Source  string                                      `json:"source"`
+	X       float64                                     `json:"x"`
+	Y       float64                                     `json:"y"`
+	W       float64                                     `json:"w"`
+	H       float64                                     `json:"h"`
+	Crop    CreateManagedStreamMixerMixerSceneLayerCrop `json:"crop"`
+	Z       float64                                     `json:"z"`
+	Opacity float64                                     `json:"opacity"`
+	Visible bool                                        `json:"visible"`
+}
+
+// CreateManagedStreamMixerMixerSceneLayerCrop is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.scenes.scene.layers.layer.crop).
+type CreateManagedStreamMixerMixerSceneLayerCrop struct {
+	L float64 `json:"l"`
+	T float64 `json:"t"`
+	R float64 `json:"r"`
+	B float64 `json:"b"`
+}
+
+// CreateManagedStreamMixerMixerSource merges the variants CreateManagedStreamMixerMixerSourceInput, CreateManagedStreamMixerMixerSourcePlaylist, CreateManagedStreamMixerMixerSourceImage, CreateManagedStreamMixerMixerSourceSvg, CreateManagedStreamMixerMixerSourceHtml, CreateManagedStreamMixerMixerSourceText, CreateManagedStreamMixerMixerSourceClock, CreateManagedStreamMixerMixerSourceColor; fields of other variants are empty.
+type CreateManagedStreamMixerMixerSource struct {
+	ID         string  `json:"id"`
+	Type       string  `json:"type"`
+	Ref        string  `json:"ref,omitempty"`
+	Width      float64 `json:"width,omitempty"`
+	Height     float64 `json:"height,omitempty"`
+	Text       string  `json:"text,omitempty"`
+	Font       string  `json:"font,omitempty"`
+	Size       float64 `json:"size,omitempty"`
+	Color      string  `json:"color,omitempty"`
+	Background string  `json:"background,omitempty"`
+	Format     string  `json:"format,omitempty"`
+	Timezone   *string `json:"timezone,omitempty"`
+}
+
+// CreateManagedStreamMixerMixerSourceClock is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.sources.source).
+type CreateManagedStreamMixerMixerSourceClock struct {
+	ID         string  `json:"id"`
+	Type       string  `json:"type"` // Always "clock".
+	Format     string  `json:"format"`
+	Timezone   *string `json:"timezone,omitempty"`
+	Font       string  `json:"font,omitempty"`
+	Size       float64 `json:"size,omitempty"`
+	Color      string  `json:"color,omitempty"`
+	Background string  `json:"background,omitempty"`
+}
+
+// CreateManagedStreamMixerMixerSourceColor is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.sources.source).
+type CreateManagedStreamMixerMixerSourceColor struct {
+	ID    string `json:"id"`
+	Type  string `json:"type"` // Always "color".
+	Color string `json:"color"`
+}
+
+// CreateManagedStreamMixerMixerSourceHtml is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.sources.source).
+type CreateManagedStreamMixerMixerSourceHtml struct {
+	ID     string  `json:"id"`
+	Type   string  `json:"type"` // Always "html".
+	Ref    string  `json:"ref"`
+	Width  float64 `json:"width,omitempty"`
+	Height float64 `json:"height,omitempty"`
+}
+
+// CreateManagedStreamMixerMixerSourceImage is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.sources.source).
+type CreateManagedStreamMixerMixerSourceImage struct {
+	ID   string `json:"id"`
+	Type string `json:"type"` // Always "image".
+	Ref  string `json:"ref"`
+}
+
+// CreateManagedStreamMixerMixerSourceInput is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.sources.source).
+type CreateManagedStreamMixerMixerSourceInput struct {
+	ID   string `json:"id"`
+	Type string `json:"type"` // Always "input".
+	Ref  string `json:"ref"`
+}
+
+// CreateManagedStreamMixerMixerSourcePlaylist is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.sources.source).
+type CreateManagedStreamMixerMixerSourcePlaylist struct {
+	ID   string `json:"id"`
+	Type string `json:"type"` // Always "playlist".
+	Ref  string `json:"ref"`
+}
+
+// CreateManagedStreamMixerMixerSourceSvg is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.sources.source).
+type CreateManagedStreamMixerMixerSourceSvg struct {
+	ID   string `json:"id"`
+	Type string `json:"type"` // Always "svg".
+	Ref  string `json:"ref"`
+}
+
+// CreateManagedStreamMixerMixerSourceText is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.sources.source).
+type CreateManagedStreamMixerMixerSourceText struct {
+	ID         string  `json:"id"`
+	Type       string  `json:"type"` // Always "text".
+	Text       string  `json:"text"`
+	Font       string  `json:"font,omitempty"`
+	Size       float64 `json:"size,omitempty"`
+	Color      string  `json:"color,omitempty"`
+	Background string  `json:"background,omitempty"`
+}
+
+// CreateManagedStreamMixerMixerTransition is an object of the Managed API (first seen in createManagedStreamMixer response.mixer.transition).
+type CreateManagedStreamMixerMixerTransition struct {
+	Type       string  `json:"type"` // One of "cut", "fade".
+	DurationMs float64 `json:"durationMs"`
+}
+
+// CreateManagedStreamMixerOutputInput is an object of the Managed API (first seen in createManagedStreamMixer body.output).
+type CreateManagedStreamMixerOutputInput struct {
+	Codec            string  `json:"codec"` // Always "h264".
+	VideoBitrateKbps float64 `json:"videoBitrateKbps"`
+	AudioBitrateKbps float64 `json:"audioBitrateKbps"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerOutputInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["codec"] = v.Codec
+	m["videoBitrateKbps"] = v.VideoBitrateKbps
+	m["audioBitrateKbps"] = v.AudioBitrateKbps
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerResponse is an object of the Managed API (first seen in createManagedStreamMixer response).
+type CreateManagedStreamMixerResponse struct {
+	Mixer CreateManagedStreamMixerMixer  `json:"mixer"`
+	Sync  CreateManagedStreamChannelSync `json:"sync"`
+}
+
+// CreateManagedStreamMixerSceneAudioItemInput is an object of the Managed API (first seen in createManagedStreamMixer body.scenes.scene.audio.audioItem).
+type CreateManagedStreamMixerSceneAudioItemInput struct {
+	Source string  `json:"source"`
+	GainDb float64 `json:"gainDb"`
+	Muted  bool    `json:"muted"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSceneAudioItemInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["source"] = v.Source
+	m["gainDb"] = v.GainDb
+	m["muted"] = v.Muted
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSceneInput is an object of the Managed API (first seen in createManagedStreamMixer body.scenes.scene).
+type CreateManagedStreamMixerSceneInput struct {
+	ID     string                                        `json:"id"`
+	Name   string                                        `json:"name"`
+	Layers []CreateManagedStreamMixerSceneLayerInput     `json:"layers"`
+	Audio  []CreateManagedStreamMixerSceneAudioItemInput `json:"audio"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSceneInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["id"] = v.ID
+	m["name"] = v.Name
+	if v.Layers == nil {
+		m["layers"] = []CreateManagedStreamMixerSceneLayerInput{}
+	} else {
+		m["layers"] = v.Layers
+	}
+	if v.Audio == nil {
+		m["audio"] = []CreateManagedStreamMixerSceneAudioItemInput{}
+	} else {
+		m["audio"] = v.Audio
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSceneLayerCropInput is an object of the Managed API (first seen in createManagedStreamMixer body.scenes.scene.layers.layer.crop).
+type CreateManagedStreamMixerSceneLayerCropInput struct {
+	L float64 `json:"l"`
+	T float64 `json:"t"`
+	R float64 `json:"r"`
+	B float64 `json:"b"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSceneLayerCropInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["l"] = v.L
+	m["t"] = v.T
+	m["r"] = v.R
+	m["b"] = v.B
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSceneLayerInput is an object of the Managed API (first seen in createManagedStreamMixer body.scenes.scene.layers.layer).
+type CreateManagedStreamMixerSceneLayerInput struct {
+	Source  string                                      `json:"source"`
+	X       float64                                     `json:"x"`
+	Y       float64                                     `json:"y"`
+	W       float64                                     `json:"w"`
+	H       float64                                     `json:"h"`
+	Crop    CreateManagedStreamMixerSceneLayerCropInput `json:"crop"`
+	Z       float64                                     `json:"z"`
+	Opacity float64                                     `json:"opacity"`
+	Visible bool                                        `json:"visible"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSceneLayerInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 9)
+	m["source"] = v.Source
+	m["x"] = v.X
+	m["y"] = v.Y
+	m["w"] = v.W
+	m["h"] = v.H
+	m["crop"] = v.Crop
+	m["z"] = v.Z
+	m["opacity"] = v.Opacity
+	m["visible"] = v.Visible
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSourceClockInput is an object of the Managed API (first seen in createManagedStreamMixer body.sources.source).
+type CreateManagedStreamMixerSourceClockInput struct {
+	ID         string   `json:"id"`
+	Type       string   `json:"type"` // Always "clock".
+	Format     string   `json:"format"`
+	Timezone   *string  `json:"timezone,omitempty"`
+	Font       string   `json:"font,omitempty"`
+	Size       *float64 `json:"size,omitempty"`
+	Color      string   `json:"color,omitempty"`
+	Background string   `json:"background,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSourceClockInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 8)
+	m["id"] = v.ID
+	m["type"] = v.Type
+	m["format"] = v.Format
+	if v.Timezone != nil {
+		m["timezone"] = v.Timezone
+	}
+	if v.Font != "" {
+		m["font"] = v.Font
+	}
+	if v.Size != nil {
+		m["size"] = v.Size
+	}
+	if v.Color != "" {
+		m["color"] = v.Color
+	}
+	if v.Background != "" {
+		m["background"] = v.Background
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSourceColorInput is an object of the Managed API (first seen in createManagedStreamMixer body.sources.source).
+type CreateManagedStreamMixerSourceColorInput struct {
+	ID    string `json:"id"`
+	Type  string `json:"type"` // Always "color".
+	Color string `json:"color"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSourceColorInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["id"] = v.ID
+	m["type"] = v.Type
+	m["color"] = v.Color
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSourceHtmlInput is an object of the Managed API (first seen in createManagedStreamMixer body.sources.source).
+type CreateManagedStreamMixerSourceHtmlInput struct {
+	ID     string   `json:"id"`
+	Type   string   `json:"type"` // Always "html".
+	Ref    string   `json:"ref"`
+	Width  *float64 `json:"width,omitempty"`
+	Height *float64 `json:"height,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSourceHtmlInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 5)
+	m["id"] = v.ID
+	m["type"] = v.Type
+	m["ref"] = v.Ref
+	if v.Width != nil {
+		m["width"] = v.Width
+	}
+	if v.Height != nil {
+		m["height"] = v.Height
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSourceImageInput is an object of the Managed API (first seen in createManagedStreamMixer body.sources.source).
+type CreateManagedStreamMixerSourceImageInput struct {
+	ID   string `json:"id"`
+	Type string `json:"type"` // Always "image".
+	Ref  string `json:"ref"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSourceImageInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["id"] = v.ID
+	m["type"] = v.Type
+	m["ref"] = v.Ref
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSourceInput merges the variants CreateManagedStreamMixerSourceInputInput, CreateManagedStreamMixerSourcePlaylistInput, CreateManagedStreamMixerSourceImageInput, CreateManagedStreamMixerSourceSvgInput, CreateManagedStreamMixerSourceHtmlInput, CreateManagedStreamMixerSourceTextInput, CreateManagedStreamMixerSourceClockInput, CreateManagedStreamMixerSourceColorInput; fields of other variants are empty.
+type CreateManagedStreamMixerSourceInput struct {
+	ID         string   `json:"id"`
+	Type       string   `json:"type"`
+	Ref        string   `json:"ref,omitempty"`
+	Width      *float64 `json:"width,omitempty"`
+	Height     *float64 `json:"height,omitempty"`
+	Text       string   `json:"text,omitempty"`
+	Font       string   `json:"font,omitempty"`
+	Size       *float64 `json:"size,omitempty"`
+	Color      string   `json:"color,omitempty"`
+	Background string   `json:"background,omitempty"`
+	Format     string   `json:"format,omitempty"`
+	Timezone   *string  `json:"timezone,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSourceInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 12)
+	m["id"] = v.ID
+	m["type"] = v.Type
+	if v.Ref != "" {
+		m["ref"] = v.Ref
+	}
+	if v.Width != nil {
+		m["width"] = v.Width
+	}
+	if v.Height != nil {
+		m["height"] = v.Height
+	}
+	if v.Text != "" {
+		m["text"] = v.Text
+	}
+	if v.Font != "" {
+		m["font"] = v.Font
+	}
+	if v.Size != nil {
+		m["size"] = v.Size
+	}
+	if v.Color != "" {
+		m["color"] = v.Color
+	}
+	if v.Background != "" {
+		m["background"] = v.Background
+	}
+	if v.Format != "" {
+		m["format"] = v.Format
+	}
+	if v.Timezone != nil {
+		m["timezone"] = v.Timezone
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSourceInputInput is an object of the Managed API (first seen in createManagedStreamMixer body.sources.source).
+type CreateManagedStreamMixerSourceInputInput struct {
+	ID   string `json:"id"`
+	Type string `json:"type"` // Always "input".
+	Ref  string `json:"ref"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSourceInputInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["id"] = v.ID
+	m["type"] = v.Type
+	m["ref"] = v.Ref
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSourcePlaylistInput is an object of the Managed API (first seen in createManagedStreamMixer body.sources.source).
+type CreateManagedStreamMixerSourcePlaylistInput struct {
+	ID   string `json:"id"`
+	Type string `json:"type"` // Always "playlist".
+	Ref  string `json:"ref"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSourcePlaylistInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["id"] = v.ID
+	m["type"] = v.Type
+	m["ref"] = v.Ref
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSourceSvgInput is an object of the Managed API (first seen in createManagedStreamMixer body.sources.source).
+type CreateManagedStreamMixerSourceSvgInput struct {
+	ID   string `json:"id"`
+	Type string `json:"type"` // Always "svg".
+	Ref  string `json:"ref"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSourceSvgInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["id"] = v.ID
+	m["type"] = v.Type
+	m["ref"] = v.Ref
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerSourceTextInput is an object of the Managed API (first seen in createManagedStreamMixer body.sources.source).
+type CreateManagedStreamMixerSourceTextInput struct {
+	ID         string   `json:"id"`
+	Type       string   `json:"type"` // Always "text".
+	Text       string   `json:"text"`
+	Font       string   `json:"font,omitempty"`
+	Size       *float64 `json:"size,omitempty"`
+	Color      string   `json:"color,omitempty"`
+	Background string   `json:"background,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerSourceTextInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 7)
+	m["id"] = v.ID
+	m["type"] = v.Type
+	m["text"] = v.Text
+	if v.Font != "" {
+		m["font"] = v.Font
+	}
+	if v.Size != nil {
+		m["size"] = v.Size
+	}
+	if v.Color != "" {
+		m["color"] = v.Color
+	}
+	if v.Background != "" {
+		m["background"] = v.Background
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamMixerTransitionInput is an object of the Managed API (first seen in createManagedStreamMixer body.transition).
+type CreateManagedStreamMixerTransitionInput struct {
+	Type       string  `json:"type"` // One of "cut", "fade".
+	DurationMs float64 `json:"durationMs"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamMixerTransitionInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["type"] = v.Type
+	m["durationMs"] = v.DurationMs
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamPlaybackKeyBody is an object of the Managed API (first seen in createManagedStreamPlaybackKey body).
+type CreateManagedStreamPlaybackKeyBody struct {
+	Name string `json:"name"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamPlaybackKeyBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 1)
+	m["name"] = v.Name
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamPlaybackKeyKey is an object of the Managed API (first seen in createManagedStreamPlaybackKey response.key).
+type CreateManagedStreamPlaybackKeyKey struct {
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	Status        string  `json:"status"` // One of "active", "retiring".
+	Fingerprint   string  `json:"fingerprint"`
+	RetiringUntil *string `json:"retiringUntil"`
+	Revision      float64 `json:"revision"`
+	CreatedAt     string  `json:"createdAt"`
+	UpdatedAt     string  `json:"updatedAt"`
+}
+
+// CreateManagedStreamPlaybackKeyResponse is an object of the Managed API (first seen in createManagedStreamPlaybackKey response).
+type CreateManagedStreamPlaybackKeyResponse struct {
+	Key    CreateManagedStreamPlaybackKeyKey `json:"key"`
+	Secret string                            `json:"secret"`
+	Sync   CreateManagedStreamChannelSync    `json:"sync"`
+}
+
+// CreateManagedStreamPlaybackTokenBody is an object of the Managed API (first seen in createManagedStreamPlaybackToken body).
+type CreateManagedStreamPlaybackTokenBody struct {
+	TTLSeconds float64 `json:"ttlSeconds"`
+	Sub        string  `json:"sub,omitempty"`
+	IP         string  `json:"ip,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamPlaybackTokenBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["ttlSeconds"] = v.TTLSeconds
+	if v.Sub != "" {
+		m["sub"] = v.Sub
+	}
+	if v.IP != "" {
+		m["ip"] = v.IP
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamPlaybackTokenResponse is an object of the Managed API (first seen in createManagedStreamPlaybackToken response).
+type CreateManagedStreamPlaybackTokenResponse struct {
+	Token     string `json:"token"`
+	ExpiresAt string `json:"expiresAt"`
+}
+
+// CreateManagedStreamPlaylistBody is an object of the Managed API (first seen in createManagedStreamPlaylist body).
+type CreateManagedStreamPlaylistBody struct {
+	Name     string                                 `json:"name"`
+	Loop     *bool                                  `json:"loop,omitempty"`
+	Shuffle  *bool                                  `json:"shuffle,omitempty"`
+	Encoding string                                 `json:"encoding,omitempty"` // One of "auto", "reencode".
+	Items    []CreateManagedStreamPlaylistItemInput `json:"items,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamPlaylistBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 5)
+	m["name"] = v.Name
+	if v.Loop != nil {
+		m["loop"] = v.Loop
+	}
+	if v.Shuffle != nil {
+		m["shuffle"] = v.Shuffle
+	}
+	if v.Encoding != "" {
+		m["encoding"] = v.Encoding
+	}
+	if v.Items != nil {
+		m["items"] = v.Items
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamPlaylistItemInput is an object of the Managed API (first seen in createManagedStreamPlaylist body.items.item).
+type CreateManagedStreamPlaylistItemInput struct {
+	StorageLinkID string   `json:"storageLinkId,omitempty"`
+	ObjectKey     string   `json:"objectKey,omitempty"`
+	AssetID       string   `json:"assetId,omitempty"`
+	URL           string   `json:"url,omitempty"`
+	Media         string   `json:"media,omitempty"` // One of "file", "hls".
+	InMs          *float64 `json:"inMs,omitempty"`
+	OutMs         *float64 `json:"outMs,omitempty"`
+	Title         string   `json:"title,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamPlaylistItemInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 8)
+	if v.StorageLinkID != "" {
+		m["storageLinkId"] = v.StorageLinkID
+	}
+	if v.ObjectKey != "" {
+		m["objectKey"] = v.ObjectKey
+	}
+	if v.AssetID != "" {
+		m["assetId"] = v.AssetID
+	}
+	if v.URL != "" {
+		m["url"] = v.URL
+	}
+	if v.Media != "" {
+		m["media"] = v.Media
+	}
+	if v.InMs != nil {
+		m["inMs"] = v.InMs
+	}
+	if v.OutMs != nil {
+		m["outMs"] = v.OutMs
+	}
+	if v.Title != "" {
+		m["title"] = v.Title
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamPlaylistPlaylist is an object of the Managed API (first seen in createManagedStreamPlaylist response.playlist).
+type CreateManagedStreamPlaylistPlaylist struct {
+	ID              string                                    `json:"id"`
+	Name            string                                    `json:"name"`
+	Loop            bool                                      `json:"loop"`
+	Shuffle         bool                                      `json:"shuffle"`
+	Encoding        string                                    `json:"encoding"` // One of "auto", "reencode".
+	Items           []CreateManagedStreamPlaylistPlaylistItem `json:"items"`
+	Revision        float64                                   `json:"revision"`
+	CreatedByUserID *string                                   `json:"createdByUserId"`
+	CreatedAt       string                                    `json:"createdAt"`
+	UpdatedAt       string                                    `json:"updatedAt"`
+}
+
+// CreateManagedStreamPlaylistPlaylistItem merges the variants CreateManagedStreamPlaylistPlaylistItemStorage, CreateManagedStreamPlaylistPlaylistItemUrl; fields of other variants are empty.
+type CreateManagedStreamPlaylistPlaylistItem struct {
+	Type        string   `json:"type"`
+	StorageLink string   `json:"storageLink,omitempty"`
+	ObjectKey   string   `json:"objectKey,omitempty"`
+	Media       string   `json:"media"`
+	InMs        float64  `json:"inMs"`
+	OutMs       *float64 `json:"outMs"`
+	Title       string   `json:"title"`
+	URL         string   `json:"url,omitempty"`
+}
+
+// CreateManagedStreamPlaylistPlaylistItemStorage is an object of the Managed API (first seen in createManagedStreamPlaylist response.playlist.items.item).
+type CreateManagedStreamPlaylistPlaylistItemStorage struct {
+	Type        string   `json:"type"` // Always "storage".
+	StorageLink string   `json:"storageLink"`
+	ObjectKey   string   `json:"objectKey"`
+	Media       string   `json:"media"` // One of "file", "hls".
+	InMs        float64  `json:"inMs"`
+	OutMs       *float64 `json:"outMs"`
+	Title       string   `json:"title"`
+}
+
+// CreateManagedStreamPlaylistPlaylistItemUrl is an object of the Managed API (first seen in createManagedStreamPlaylist response.playlist.items.item).
+type CreateManagedStreamPlaylistPlaylistItemUrl struct {
+	Type  string   `json:"type"` // Always "url".
+	URL   string   `json:"url"`
+	Media string   `json:"media"` // One of "file", "hls".
+	InMs  float64  `json:"inMs"`
+	OutMs *float64 `json:"outMs"`
+	Title string   `json:"title"`
+}
+
+// CreateManagedStreamPlaylistResponse is an object of the Managed API (first seen in createManagedStreamPlaylist response).
+type CreateManagedStreamPlaylistResponse struct {
+	Playlist CreateManagedStreamPlaylistPlaylist `json:"playlist"`
+	Sync     CreateManagedStreamChannelSync      `json:"sync"`
+}
+
+// CreateManagedStreamScheduleBody is an object of the Managed API (first seen in createManagedStreamSchedule body).
+type CreateManagedStreamScheduleBody struct {
+	Name            string                                        `json:"name"`
+	Enabled         *bool                                         `json:"enabled,omitempty"`
+	Timezone        string                                        `json:"timezone"`
+	Start           string                                        `json:"start"`
+	Rrule           *string                                       `json:"rrule,omitempty"`
+	DurationMinutes float64                                       `json:"durationMinutes"`
+	OnStart         []CreateManagedStreamScheduleOnStartItemInput `json:"onStart,omitempty"`
+	OnEnd           []CreateManagedStreamScheduleOnStartItemInput `json:"onEnd,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 8)
+	m["name"] = v.Name
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	m["timezone"] = v.Timezone
+	m["start"] = v.Start
+	if v.Rrule != nil {
+		m["rrule"] = v.Rrule
+	}
+	m["durationMinutes"] = v.DurationMinutes
+	if v.OnStart != nil {
+		m["onStart"] = v.OnStart
+	}
+	if v.OnEnd != nil {
+		m["onEnd"] = v.OnEnd
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemChannelSlateInput is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemChannelSlateInput struct {
+	Op      string `json:"op"` // Always "channel.slate".
+	Channel string `json:"channel"`
+	On      bool   `json:"on"`
+	Slate   string `json:"slate,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemChannelSlateInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["op"] = v.Op
+	m["channel"] = v.Channel
+	m["on"] = v.On
+	if v.Slate != "" {
+		m["slate"] = v.Slate
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemChannelSourceInput is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemChannelSourceInput struct {
+	Op      string                                `json:"op"` // Always "channel.source".
+	Channel string                                `json:"channel"`
+	Source  CreateManagedStreamChannelSourceInput `json:"source"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemChannelSourceInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["op"] = v.Op
+	m["channel"] = v.Channel
+	m["source"] = v.Source
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemGraphicsSetInput is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemGraphicsSetInput struct {
+	Op        string            `json:"op"` // Always "graphics.set".
+	Graphic   string            `json:"graphic"`
+	Variables map[string]string `json:"variables"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemGraphicsSetInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["op"] = v.Op
+	m["graphic"] = v.Graphic
+	if v.Variables == nil {
+		m["variables"] = map[string]string{}
+	} else {
+		m["variables"] = v.Variables
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemInput merges the variants CreateManagedStreamScheduleOnStartItemMixerSceneInput, CreateManagedStreamScheduleOnStartItemMixerLayerInput, CreateManagedStreamScheduleOnStartItemMixerAudioInput, CreateManagedStreamScheduleOnStartItemMixerTextInput, CreateManagedStreamScheduleOnStartItemGraphicsSetInput, CreateManagedStreamScheduleOnStartItemVariant6Input, CreateManagedStreamScheduleOnStartItemChannelSourceInput, CreateManagedStreamScheduleOnStartItemChannelSlateInput, CreateManagedStreamScheduleOnStartItemVariant9Input, CreateManagedStreamScheduleOnStartItemVariant10Input, CreateManagedStreamScheduleOnStartItemPlaylistPlayInput, CreateManagedStreamScheduleOnStartItemPlaylistNextInput; fields of other variants are empty.
+type CreateManagedStreamScheduleOnStartItemInput struct {
+	Op          string                                       `json:"op"`
+	Mixer       string                                       `json:"mixer,omitempty"`
+	Scene       string                                       `json:"scene,omitempty"`
+	Transition  *CreateManagedStreamMixerTransitionInput     `json:"transition,omitempty"`
+	Source      json.RawMessage                              `json:"source,omitempty"`
+	X           *float64                                     `json:"x,omitempty"`
+	Y           *float64                                     `json:"y,omitempty"`
+	W           *float64                                     `json:"w,omitempty"`
+	H           *float64                                     `json:"h,omitempty"`
+	Crop        *CreateManagedStreamMixerSceneLayerCropInput `json:"crop,omitempty"`
+	Z           *float64                                     `json:"z,omitempty"`
+	Opacity     *float64                                     `json:"opacity,omitempty"`
+	Visible     *bool                                        `json:"visible,omitempty"`
+	GainDb      *float64                                     `json:"gainDb,omitempty"`
+	Muted       *bool                                        `json:"muted,omitempty"`
+	Text        string                                       `json:"text,omitempty"`
+	Graphic     string                                       `json:"graphic,omitempty"`
+	Variables   map[string]string                            `json:"variables,omitempty"`
+	Channel     string                                       `json:"channel,omitempty"`
+	On          *bool                                        `json:"on,omitempty"`
+	Slate       string                                       `json:"slate,omitempty"`
+	Destination string                                       `json:"destination,omitempty"`
+	Playlist    string                                       `json:"playlist,omitempty"`
+	Item        *float64                                     `json:"item,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 24)
+	m["op"] = v.Op
+	if v.Mixer != "" {
+		m["mixer"] = v.Mixer
+	}
+	if v.Scene != "" {
+		m["scene"] = v.Scene
+	}
+	if v.Transition != nil {
+		m["transition"] = v.Transition
+	}
+	m["source"] = v.Source
+	if v.X != nil {
+		m["x"] = v.X
+	}
+	if v.Y != nil {
+		m["y"] = v.Y
+	}
+	if v.W != nil {
+		m["w"] = v.W
+	}
+	if v.H != nil {
+		m["h"] = v.H
+	}
+	if v.Crop != nil {
+		m["crop"] = v.Crop
+	}
+	if v.Z != nil {
+		m["z"] = v.Z
+	}
+	if v.Opacity != nil {
+		m["opacity"] = v.Opacity
+	}
+	if v.Visible != nil {
+		m["visible"] = v.Visible
+	}
+	if v.GainDb != nil {
+		m["gainDb"] = v.GainDb
+	}
+	if v.Muted != nil {
+		m["muted"] = v.Muted
+	}
+	if v.Text != "" {
+		m["text"] = v.Text
+	}
+	if v.Graphic != "" {
+		m["graphic"] = v.Graphic
+	}
+	if v.Variables != nil {
+		m["variables"] = v.Variables
+	}
+	if v.Channel != "" {
+		m["channel"] = v.Channel
+	}
+	if v.On != nil {
+		m["on"] = v.On
+	}
+	if v.Slate != "" {
+		m["slate"] = v.Slate
+	}
+	if v.Destination != "" {
+		m["destination"] = v.Destination
+	}
+	if v.Playlist != "" {
+		m["playlist"] = v.Playlist
+	}
+	if v.Item != nil {
+		m["item"] = v.Item
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemMixerAudioInput is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemMixerAudioInput struct {
+	Op     string   `json:"op"` // Always "mixer.audio".
+	Mixer  string   `json:"mixer"`
+	Source string   `json:"source"`
+	GainDb *float64 `json:"gainDb,omitempty"`
+	Muted  *bool    `json:"muted,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemMixerAudioInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 5)
+	m["op"] = v.Op
+	m["mixer"] = v.Mixer
+	m["source"] = v.Source
+	if v.GainDb != nil {
+		m["gainDb"] = v.GainDb
+	}
+	if v.Muted != nil {
+		m["muted"] = v.Muted
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemMixerLayerInput is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemMixerLayerInput struct {
+	Op      string                                       `json:"op"` // Always "mixer.layer".
+	Mixer   string                                       `json:"mixer"`
+	Source  string                                       `json:"source"`
+	X       *float64                                     `json:"x,omitempty"`
+	Y       *float64                                     `json:"y,omitempty"`
+	W       *float64                                     `json:"w,omitempty"`
+	H       *float64                                     `json:"h,omitempty"`
+	Crop    *CreateManagedStreamMixerSceneLayerCropInput `json:"crop,omitempty"`
+	Z       *float64                                     `json:"z,omitempty"`
+	Opacity *float64                                     `json:"opacity,omitempty"`
+	Visible *bool                                        `json:"visible,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemMixerLayerInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 11)
+	m["op"] = v.Op
+	m["mixer"] = v.Mixer
+	m["source"] = v.Source
+	if v.X != nil {
+		m["x"] = v.X
+	}
+	if v.Y != nil {
+		m["y"] = v.Y
+	}
+	if v.W != nil {
+		m["w"] = v.W
+	}
+	if v.H != nil {
+		m["h"] = v.H
+	}
+	if v.Crop != nil {
+		m["crop"] = v.Crop
+	}
+	if v.Z != nil {
+		m["z"] = v.Z
+	}
+	if v.Opacity != nil {
+		m["opacity"] = v.Opacity
+	}
+	if v.Visible != nil {
+		m["visible"] = v.Visible
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemMixerSceneInput is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemMixerSceneInput struct {
+	Op         string                                   `json:"op"` // Always "mixer.scene".
+	Mixer      string                                   `json:"mixer"`
+	Scene      string                                   `json:"scene"`
+	Transition *CreateManagedStreamMixerTransitionInput `json:"transition,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemMixerSceneInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["op"] = v.Op
+	m["mixer"] = v.Mixer
+	m["scene"] = v.Scene
+	if v.Transition != nil {
+		m["transition"] = v.Transition
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemMixerTextInput is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemMixerTextInput struct {
+	Op     string `json:"op"` // Always "mixer.text".
+	Mixer  string `json:"mixer"`
+	Source string `json:"source"`
+	Text   string `json:"text"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemMixerTextInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["op"] = v.Op
+	m["mixer"] = v.Mixer
+	m["source"] = v.Source
+	m["text"] = v.Text
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemPlaylistNextInput is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemPlaylistNextInput struct {
+	Op      string `json:"op"` // Always "playlist.next".
+	Channel string `json:"channel"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemPlaylistNextInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["op"] = v.Op
+	m["channel"] = v.Channel
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemPlaylistPlayInput is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemPlaylistPlayInput struct {
+	Op       string   `json:"op"` // Always "playlist.play".
+	Channel  string   `json:"channel"`
+	Playlist string   `json:"playlist"`
+	Item     *float64 `json:"item,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemPlaylistPlayInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["op"] = v.Op
+	m["channel"] = v.Channel
+	m["playlist"] = v.Playlist
+	if v.Item != nil {
+		m["item"] = v.Item
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemVariant10Input is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemVariant10Input struct {
+	Op      string `json:"op"` // One of "recording.start", "recording.stop".
+	Channel string `json:"channel"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemVariant10Input) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["op"] = v.Op
+	m["channel"] = v.Channel
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemVariant6Input is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemVariant6Input struct {
+	Op      string `json:"op"` // One of "channel.start", "channel.stop".
+	Channel string `json:"channel"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemVariant6Input) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["op"] = v.Op
+	m["channel"] = v.Channel
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleOnStartItemVariant9Input is an object of the Managed API (first seen in createManagedStreamSchedule body.onStart.onStartItem).
+type CreateManagedStreamScheduleOnStartItemVariant9Input struct {
+	Op          string `json:"op"` // One of "destination.start", "destination.stop".
+	Destination string `json:"destination"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamScheduleOnStartItemVariant9Input) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["op"] = v.Op
+	m["destination"] = v.Destination
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamScheduleResponse is an object of the Managed API (first seen in createManagedStreamSchedule response).
+type CreateManagedStreamScheduleResponse struct {
+	Schedule CreateManagedStreamScheduleSchedule `json:"schedule"`
+	Sync     CreateManagedStreamChannelSync      `json:"sync"`
+}
+
+// CreateManagedStreamScheduleSchedule is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule).
+type CreateManagedStreamScheduleSchedule struct {
+	ID              string                                           `json:"id"`
+	Name            string                                           `json:"name"`
+	Enabled         bool                                             `json:"enabled"`
+	Timezone        string                                           `json:"timezone"`
+	Start           string                                           `json:"start"`
+	Rrule           string                                           `json:"rrule"`
+	DurationMinutes float64                                          `json:"durationMinutes"`
+	OnStart         []CreateManagedStreamScheduleScheduleOnStartItem `json:"onStart"`
+	OnEnd           []CreateManagedStreamScheduleScheduleOnStartItem `json:"onEnd"`
+	NextStartAt     *string                                          `json:"nextStartAt"`
+	Upcoming        []string                                         `json:"upcoming"`
+	Revision        float64                                          `json:"revision"`
+	CreatedByUserID *string                                          `json:"createdByUserId"`
+	CreatedAt       string                                           `json:"createdAt"`
+	UpdatedAt       string                                           `json:"updatedAt"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItem merges the variants CreateManagedStreamScheduleScheduleOnStartItemMixerScene, CreateManagedStreamScheduleScheduleOnStartItemMixerLayer, CreateManagedStreamScheduleScheduleOnStartItemMixerAudio, CreateManagedStreamScheduleScheduleOnStartItemMixerText, CreateManagedStreamScheduleScheduleOnStartItemGraphicsSet, CreateManagedStreamScheduleScheduleOnStartItemVariant6, CreateManagedStreamScheduleScheduleOnStartItemChannelSource, CreateManagedStreamScheduleScheduleOnStartItemChannelSlate, CreateManagedStreamScheduleScheduleOnStartItemVariant9, CreateManagedStreamScheduleScheduleOnStartItemVariant10, CreateManagedStreamScheduleScheduleOnStartItemPlaylistPlay, CreateManagedStreamScheduleScheduleOnStartItemPlaylistNext; fields of other variants are empty.
+type CreateManagedStreamScheduleScheduleOnStartItem struct {
+	Op          string                                       `json:"op"`
+	Mixer       string                                       `json:"mixer,omitempty"`
+	Scene       string                                       `json:"scene,omitempty"`
+	Transition  *CreateManagedStreamMixerMixerTransition     `json:"transition,omitempty"`
+	Source      json.RawMessage                              `json:"source,omitempty"`
+	X           float64                                      `json:"x,omitempty"`
+	Y           float64                                      `json:"y,omitempty"`
+	W           float64                                      `json:"w,omitempty"`
+	H           float64                                      `json:"h,omitempty"`
+	Crop        *CreateManagedStreamMixerMixerSceneLayerCrop `json:"crop,omitempty"`
+	Z           float64                                      `json:"z,omitempty"`
+	Opacity     float64                                      `json:"opacity,omitempty"`
+	Visible     bool                                         `json:"visible,omitempty"`
+	GainDb      float64                                      `json:"gainDb,omitempty"`
+	Muted       bool                                         `json:"muted,omitempty"`
+	Text        string                                       `json:"text,omitempty"`
+	Graphic     string                                       `json:"graphic,omitempty"`
+	Variables   map[string]string                            `json:"variables,omitempty"`
+	Channel     string                                       `json:"channel,omitempty"`
+	On          bool                                         `json:"on,omitempty"`
+	Slate       string                                       `json:"slate,omitempty"`
+	Destination string                                       `json:"destination,omitempty"`
+	Playlist    string                                       `json:"playlist,omitempty"`
+	Item        float64                                      `json:"item,omitempty"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemChannelSlate is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemChannelSlate struct {
+	Op      string `json:"op"` // Always "channel.slate".
+	Channel string `json:"channel"`
+	On      bool   `json:"on"`
+	Slate   string `json:"slate,omitempty"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemChannelSource is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemChannelSource struct {
+	Op      string                                  `json:"op"` // Always "channel.source".
+	Channel string                                  `json:"channel"`
+	Source  CreateManagedStreamChannelChannelSource `json:"source"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemGraphicsSet is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemGraphicsSet struct {
+	Op        string            `json:"op"` // Always "graphics.set".
+	Graphic   string            `json:"graphic"`
+	Variables map[string]string `json:"variables"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemMixerAudio is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemMixerAudio struct {
+	Op     string  `json:"op"` // Always "mixer.audio".
+	Mixer  string  `json:"mixer"`
+	Source string  `json:"source"`
+	GainDb float64 `json:"gainDb,omitempty"`
+	Muted  bool    `json:"muted,omitempty"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemMixerLayer is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemMixerLayer struct {
+	Op      string                                       `json:"op"` // Always "mixer.layer".
+	Mixer   string                                       `json:"mixer"`
+	Source  string                                       `json:"source"`
+	X       float64                                      `json:"x,omitempty"`
+	Y       float64                                      `json:"y,omitempty"`
+	W       float64                                      `json:"w,omitempty"`
+	H       float64                                      `json:"h,omitempty"`
+	Crop    *CreateManagedStreamMixerMixerSceneLayerCrop `json:"crop,omitempty"`
+	Z       float64                                      `json:"z,omitempty"`
+	Opacity float64                                      `json:"opacity,omitempty"`
+	Visible bool                                         `json:"visible,omitempty"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemMixerScene is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemMixerScene struct {
+	Op         string                                   `json:"op"` // Always "mixer.scene".
+	Mixer      string                                   `json:"mixer"`
+	Scene      string                                   `json:"scene"`
+	Transition *CreateManagedStreamMixerMixerTransition `json:"transition,omitempty"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemMixerText is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemMixerText struct {
+	Op     string `json:"op"` // Always "mixer.text".
+	Mixer  string `json:"mixer"`
+	Source string `json:"source"`
+	Text   string `json:"text"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemPlaylistNext is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemPlaylistNext struct {
+	Op      string `json:"op"` // Always "playlist.next".
+	Channel string `json:"channel"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemPlaylistPlay is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemPlaylistPlay struct {
+	Op       string  `json:"op"` // Always "playlist.play".
+	Channel  string  `json:"channel"`
+	Playlist string  `json:"playlist"`
+	Item     float64 `json:"item,omitempty"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemVariant10 is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemVariant10 struct {
+	Op      string `json:"op"` // One of "recording.start", "recording.stop".
+	Channel string `json:"channel"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemVariant6 is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemVariant6 struct {
+	Op      string `json:"op"` // One of "channel.start", "channel.stop".
+	Channel string `json:"channel"`
+}
+
+// CreateManagedStreamScheduleScheduleOnStartItemVariant9 is an object of the Managed API (first seen in createManagedStreamSchedule response.schedule.onStart.onStartItem).
+type CreateManagedStreamScheduleScheduleOnStartItemVariant9 struct {
+	Op          string `json:"op"` // One of "destination.start", "destination.stop".
+	Destination string `json:"destination"`
+}
+
+// CreateManagedStreamStorageLinkBody is an object of the Managed API (first seen in createManagedStreamStorageLink body).
+type CreateManagedStreamStorageLinkBody struct {
+	StorageProjectID string `json:"storageProjectId"`
+	Bucket           string `json:"bucket"`
+	Mode             string `json:"mode"` // One of "read", "write", "read_write".
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamStorageLinkBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["storageProjectId"] = v.StorageProjectID
+	m["bucket"] = v.Bucket
+	m["mode"] = v.Mode
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamStorageLinkResponse is an object of the Managed API (first seen in createManagedStreamStorageLink response).
+type CreateManagedStreamStorageLinkResponse struct {
+	StorageLink CreateManagedStreamStorageLinkStorageLink `json:"storageLink"`
+	Sync        CreateManagedStreamChannelSync            `json:"sync"`
+}
+
+// CreateManagedStreamStorageLinkStorageLink is an object of the Managed API (first seen in createManagedStreamStorageLink response.storageLink).
+type CreateManagedStreamStorageLinkStorageLink struct {
+	ID               string  `json:"id"`
+	StorageProjectID string  `json:"storageProjectId"`
+	Bucket           string  `json:"bucket"`
+	Mode             string  `json:"mode"` // One of "read", "write", "read_write".
+	Endpoint         string  `json:"endpoint"`
+	Region           string  `json:"region"`
+	AccessKeyID      string  `json:"accessKeyId"`
+	StorageKeyID     *string `json:"storageKeyId"`
+	Revision         float64 `json:"revision"`
+	CreatedByUserID  *string `json:"createdByUserId"`
+	CreatedAt        string  `json:"createdAt"`
+	UpdatedAt        string  `json:"updatedAt"`
+}
+
+// CreateManagedStreamStudioTokenBody is an object of the Managed API (first seen in createManagedStreamStudioToken body).
+type CreateManagedStreamStudioTokenBody struct {
+	Origin string `json:"origin,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamStudioTokenBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 1)
+	if v.Origin != "" {
+		m["origin"] = v.Origin
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamStudioTokenResponse is an object of the Managed API (first seen in createManagedStreamStudioToken response).
+type CreateManagedStreamStudioTokenResponse struct {
+	Token     string   `json:"token"`
+	URL       string   `json:"url"`
+	ExpiresAt string   `json:"expiresAt"`
+	Scopes    []string `json:"scopes"`
+}
+
+// CreateManagedStreamWebhookBody is an object of the Managed API (first seen in createManagedStreamWebhook body).
+type CreateManagedStreamWebhookBody struct {
+	URL     string   `json:"url"`
+	Events  []string `json:"events,omitempty"`
+	Enabled *bool    `json:"enabled,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v CreateManagedStreamWebhookBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["url"] = v.URL
+	if v.Events != nil {
+		m["events"] = v.Events
+	}
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	return json.Marshal(m)
+}
+
+// CreateManagedStreamWebhookResponse is an object of the Managed API (first seen in createManagedStreamWebhook response).
+type CreateManagedStreamWebhookResponse struct {
+	Webhook CreateManagedStreamWebhookWebhook `json:"webhook"`
+	Secret  string                            `json:"secret"`
+	Sync    CreateManagedStreamChannelSync    `json:"sync"`
+}
+
+// CreateManagedStreamWebhookWebhook is an object of the Managed API (first seen in createManagedStreamWebhook response.webhook).
+type CreateManagedStreamWebhookWebhook struct {
+	ID              string   `json:"id"`
+	URL             string   `json:"url"`
+	Events          []string `json:"events"`
+	Enabled         bool     `json:"enabled"`
+	Fingerprint     string   `json:"fingerprint"`
+	Revision        float64  `json:"revision"`
+	CreatedByUserID *string  `json:"createdByUserId"`
+	CreatedAt       string   `json:"createdAt"`
+	UpdatedAt       string   `json:"updatedAt"`
+}
+
 // DeleteManagedInstanceBindingResponse is an object of the Managed API (first seen in deleteManagedInstanceBinding response).
 type DeleteManagedInstanceBindingResponse struct {
 	Deleted bool `json:"deleted"` // Always true.
@@ -374,6 +2599,55 @@ type DeleteManagedRealtimeWebhookResponse struct {
 	Sync    ManagedRealtimeSync `json:"sync"`
 }
 
+// DeleteManagedStreamBindingResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/:bindingId/delete (deleteManagedStreamBinding).
+type DeleteManagedStreamBindingResponse = DeleteManagedRealtimeBindingResponse
+
+// DeleteManagedStreamChannelResponse is an object of the Managed API (first seen in deleteManagedStreamChannel response).
+type DeleteManagedStreamChannelResponse struct {
+	Deleted bool                           `json:"deleted"` // Always true.
+	Sync    CreateManagedStreamChannelSync `json:"sync"`
+}
+
+// DeleteManagedStreamDestinationResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/delete (deleteManagedStreamDestination).
+type DeleteManagedStreamDestinationResponse = DeleteManagedStreamChannelResponse
+
+// DeleteManagedStreamDomainResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/:domainId/delete (deleteManagedStreamDomain).
+type DeleteManagedStreamDomainResponse = DeleteManagedStreamChannelResponse
+
+// DeleteManagedStreamGraphicResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/:graphicId/delete (deleteManagedStreamGraphic).
+type DeleteManagedStreamGraphicResponse = DeleteManagedStreamChannelResponse
+
+// DeleteManagedStreamInputResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/delete (deleteManagedStreamInput).
+type DeleteManagedStreamInputResponse = DeleteManagedStreamChannelResponse
+
+// DeleteManagedStreamMixerResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/delete (deleteManagedStreamMixer).
+type DeleteManagedStreamMixerResponse = DeleteManagedStreamChannelResponse
+
+// DeleteManagedStreamPlaybackKeyResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/:keyId/delete (deleteManagedStreamPlaybackKey).
+type DeleteManagedStreamPlaybackKeyResponse = DeleteManagedStreamChannelResponse
+
+// DeleteManagedStreamPlaylistResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/delete (deleteManagedStreamPlaylist).
+type DeleteManagedStreamPlaylistResponse = DeleteManagedStreamChannelResponse
+
+// DeleteManagedStreamRecordingResponse is an object of the Managed API (first seen in deleteManagedStreamRecording response).
+type DeleteManagedStreamRecordingResponse struct {
+	Deleted       bool `json:"deleted"` // Always true.
+	ObjectDeleted bool `json:"objectDeleted"`
+}
+
+// DeleteManagedStreamScheduleResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/delete (deleteManagedStreamSchedule).
+type DeleteManagedStreamScheduleResponse = DeleteManagedStreamChannelResponse
+
+// DeleteManagedStreamStorageLinkResponse is an object of the Managed API (first seen in deleteManagedStreamStorageLink response).
+type DeleteManagedStreamStorageLinkResponse struct {
+	Deleted    bool                           `json:"deleted"` // Always true.
+	KeyRevoked bool                           `json:"keyRevoked"`
+	Sync       CreateManagedStreamChannelSync `json:"sync"`
+}
+
+// DeleteManagedStreamWebhookResponse is the data of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/delete (deleteManagedStreamWebhook).
+type DeleteManagedStreamWebhookResponse = DeleteManagedStreamChannelResponse
+
 // GetManagedCatalogRealtimeEngine is an object of the Managed API (first seen in getManagedCatalog response.realtime.engine).
 type GetManagedCatalogRealtimeEngine struct {
 	ID           string                                   `json:"id"` // Always "realtime".
@@ -401,11 +2675,12 @@ type GetManagedCatalogResponse struct {
 	MaxAllowlistEntries    float64                    `json:"maxAllowlistEntries"`
 	MaxInstancesPerAccount float64                    `json:"maxInstancesPerAccount"`
 	Realtime               ManagedCatalogRealtime     `json:"realtime"`
+	Streams                GetManagedCatalogStreams   `json:"streams"`
 }
 
 // GetManagedCatalogService is an object of the Managed API (first seen in getManagedCatalog response.services.service).
 type GetManagedCatalogService struct {
-	ID          string `json:"id"` // One of "database", "cache", "realtime".
+	ID          string `json:"id"` // One of "database", "cache", "realtime", "stream".
 	Label       string `json:"label"`
 	Description string `json:"description"`
 	Status      string `json:"status"` // One of "available", "coming_soon".
@@ -440,6 +2715,58 @@ type GetManagedCatalogSizesStorageGib struct {
 	Min     float64 `json:"min"`
 	Max     float64 `json:"max"`
 	Default float64 `json:"default"`
+}
+
+// GetManagedCatalogStreams is an object of the Managed API (first seen in getManagedCatalog response.streams).
+type GetManagedCatalogStreams struct {
+	Available                  bool                                         `json:"available"`
+	SpeedPresetsMbps           []float64                                    `json:"speedPresetsMbps"`
+	SpeedMbps                  GetManagedCatalogStreamsSpeedMbps            `json:"speedMbps"`
+	ProcessingMbps             GetManagedCatalogSizesStorageGib             `json:"processingMbps"`
+	MaxSpeedMbpsWithoutDeposit float64                                      `json:"maxSpeedMbpsWithoutDeposit"`
+	FreeSpeedMbps              float64                                      `json:"freeSpeedMbps"`
+	MaxInstancesPerAccount     float64                                      `json:"maxInstancesPerAccount"`
+	StartingPrice              GetManagedCatalogStreamsStartingPrice        `json:"startingPrice"`
+	Pricing                    GetManagedCatalogStreamsStartingPricePricing `json:"pricing"`
+}
+
+// GetManagedCatalogStreamsSpeedMbps is an object of the Managed API (first seen in getManagedCatalog response.streams.speedMbps).
+type GetManagedCatalogStreamsSpeedMbps struct {
+	Min     float64 `json:"min"`
+	Max     float64 `json:"max"`
+	Step    float64 `json:"step"`
+	Default float64 `json:"default"`
+}
+
+// GetManagedCatalogStreamsStartingPrice is an object of the Managed API (first seen in getManagedCatalog response.streams.startingPrice).
+type GetManagedCatalogStreamsStartingPrice struct {
+	Hourly        GetManagedCatalogStreamsStartingPriceHourly  `json:"hourly"`
+	Monthly       GetManagedCatalogStreamsStartingPriceMonthly `json:"monthly"`
+	FreeSpeedMbps float64                                      `json:"freeSpeedMbps"`
+	Pricing       GetManagedCatalogStreamsStartingPricePricing `json:"pricing"`
+}
+
+// GetManagedCatalogStreamsStartingPriceHourly is an object of the Managed API (first seen in getManagedCatalog response.streams.startingPrice.hourly).
+type GetManagedCatalogStreamsStartingPriceHourly struct {
+	SpeedMicroUsd          float64 `json:"speedMicroUsd"`
+	SpeedMicroUsdAfterFree float64 `json:"speedMicroUsdAfterFree"`
+}
+
+// GetManagedCatalogStreamsStartingPriceMonthly is an object of the Managed API (first seen in getManagedCatalog response.streams.startingPrice.monthly).
+type GetManagedCatalogStreamsStartingPriceMonthly struct {
+	SpeedUsd          float64 `json:"speedUsd"`
+	SpeedUsdAfterFree float64 `json:"speedUsdAfterFree"`
+}
+
+// GetManagedCatalogStreamsStartingPricePricing is an object of the Managed API (first seen in getManagedCatalog response.streams.startingPrice.pricing).
+type GetManagedCatalogStreamsStartingPricePricing struct {
+	Version                         float64 `json:"version"`
+	SpeedMicroUsdPerMbpsHour        float64 `json:"speedMicroUsdPerMbpsHour"`
+	ProcessingMicroUsdPerMbpsHour   float64 `json:"processingMicroUsdPerMbpsHour"`
+	BandwidthMicroUsdPerGb          float64 `json:"bandwidthMicroUsdPerGb"`
+	FreeSpeedMbpsPerHour            float64 `json:"freeSpeedMbpsPerHour"`
+	FreeProcessingMbpsHoursPerMonth float64 `json:"freeProcessingMbpsHoursPerMonth"`
+	FreeBandwidthGbPerMonth         float64 `json:"freeBandwidthGbPerMonth"`
 }
 
 // GetManagedClientIpResponse is an object of the Managed API (first seen in getManagedClientIp response).
@@ -778,7 +3105,7 @@ type GetManagedInstancesResponse struct {
 type GetManagedInstanceTableRowsColumn struct {
 	Name       string `json:"name"`
 	Type       string `json:"type"`
-	Kind       string `json:"kind"` // One of "number", "boolean", "json", "text", "binary", "datetime", "other".
+	Kind       string `json:"kind"` // One of "number", "boolean", "json", "other", "text", "binary", "datetime".
 	Nullable   bool   `json:"nullable"`
 	PrimaryKey bool   `json:"primaryKey"`
 }
@@ -987,6 +3314,267 @@ type GetManagedRealtimeWebhooksResponse struct {
 	Items []ManagedRealtimeWebhook `json:"items"`
 }
 
+// GetManagedStreamChannelPlaybackResponse is an object of the Managed API (first seen in getManagedStreamChannelPlayback response).
+type GetManagedStreamChannelPlaybackResponse struct {
+	URLs          GetManagedStreamChannelPlaybackUrls `json:"urls"`
+	EmbedHtml     string                              `json:"embedHtml"`
+	TokenRequired bool                                `json:"tokenRequired"`
+}
+
+// GetManagedStreamChannelPlaybackUrls is an object of the Managed API (first seen in getManagedStreamChannelPlayback response.urls).
+type GetManagedStreamChannelPlaybackUrls struct {
+	Hls      string                                                   `json:"hls"`
+	Whep     string                                                   `json:"whep"`
+	Embed    string                                                   `json:"embed"`
+	Thumb    string                                                   `json:"thumb"`
+	Status   string                                                   `json:"status"`
+	Audio    []CreateManagedStreamChannelChannelPlaybackUrlsAudioItem `json:"audio"`
+	RtmpPull string                                                   `json:"rtmpPull,omitempty"`
+	SrtPull  string                                                   `json:"srtPull,omitempty"`
+}
+
+// GetManagedStreamChannelResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId (getManagedStreamChannel).
+type GetManagedStreamChannelResponse = CreateManagedStreamChannelChannel
+
+// GetManagedStreamDestinationResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId (getManagedStreamDestination).
+type GetManagedStreamDestinationResponse = CreateManagedStreamDestinationDestination
+
+// GetManagedStreamInputResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId (getManagedStreamInput).
+type GetManagedStreamInputResponse = CreateManagedStreamInputInput
+
+// GetManagedStreamLiveChannel is an object of the Managed API (first seen in getManagedStreamLive response.channels.channel).
+type GetManagedStreamLiveChannel struct {
+	ID         string                                   `json:"id"`
+	State      string                                   `json:"state"` // One of "live", "disabled", "starting", "offline".
+	OnAir      bool                                     `json:"onAir"`
+	Source     *CreateManagedStreamChannelChannelBackup `json:"source"`
+	OnSlate    bool                                     `json:"onSlate"`
+	Viewers    GetManagedStreamLiveChannelViewers       `json:"viewers"`
+	Renditions []GetManagedStreamLiveChannelRendition   `json:"renditions"`
+	Recording  *GetManagedStreamLiveChannelRecording    `json:"recording"`
+	Playlist   *GetManagedStreamLiveChannelPlaylist     `json:"playlist"`
+}
+
+// GetManagedStreamLiveChannelPlaylist is an object of the Managed API (first seen in getManagedStreamLive response.channels.channel.playlist).
+type GetManagedStreamLiveChannelPlaylist struct {
+	ID    string  `json:"id"`
+	Item  float64 `json:"item"`
+	Title string  `json:"title"`
+}
+
+// GetManagedStreamLiveChannelRecording is an object of the Managed API (first seen in getManagedStreamLive response.channels.channel.recording).
+type GetManagedStreamLiveChannelRecording struct {
+	State string  `json:"state"` // One of "error", "recording", "uploading", "idle".
+	ID    string  `json:"id"`
+	Since *string `json:"since"`
+}
+
+// GetManagedStreamLiveChannelRendition is an object of the Managed API (first seen in getManagedStreamLive response.channels.channel.renditions.rendition).
+type GetManagedStreamLiveChannelRendition struct {
+	Name           string  `json:"name"`
+	State          string  `json:"state"` // One of "rejected", "stopped", "running", "waiting", "error".
+	ProcessingMbps float64 `json:"processingMbps"`
+	Error          *string `json:"error,omitempty"`
+}
+
+// GetManagedStreamLiveChannelViewers is an object of the Managed API (first seen in getManagedStreamLive response.channels.channel.viewers).
+type GetManagedStreamLiveChannelViewers struct {
+	Hls     float64 `json:"hls"`
+	Webrtc  float64 `json:"webrtc"`
+	Icecast float64 `json:"icecast"`
+	Pull    float64 `json:"pull"`
+}
+
+// GetManagedStreamLiveDestination is an object of the Managed API (first seen in getManagedStreamLive response.destinations.destination).
+type GetManagedStreamLiveDestination struct {
+	ID          string  `json:"id"`
+	State       string  `json:"state"` // One of "disabled", "stopped", "error", "connected", "connecting", "retrying".
+	Since       *string `json:"since"`
+	BitrateKbps float64 `json:"bitrateKbps"`
+	Retries     float64 `json:"retries"`
+	LastError   *string `json:"lastError"`
+}
+
+// GetManagedStreamLiveInput is an object of the Managed API (first seen in getManagedStreamLive response.inputs.input).
+type GetManagedStreamLiveInput struct {
+	ID         string                               `json:"id"`
+	State      string                               `json:"state"`      // One of "live", "disabled", "offline".
+	ActiveRole *string                              `json:"activeRole"` // One of "primary", "backup".
+	Publishers []GetManagedStreamLiveInputPublisher `json:"publishers"`
+}
+
+// GetManagedStreamLiveInputPublisher is an object of the Managed API (first seen in getManagedStreamLive response.inputs.input.publishers.publisher).
+type GetManagedStreamLiveInputPublisher struct {
+	Role     string                                   `json:"role"` // One of "primary", "backup".
+	Protocol string                                   `json:"protocol"`
+	Remote   string                                   `json:"remote"`
+	Since    string                                   `json:"since"`
+	Video    *GetManagedStreamLiveInputPublisherVideo `json:"video"`
+	Audio    *GetManagedStreamLiveInputPublisherAudio `json:"audio"`
+	Srt      *GetManagedStreamLiveInputPublisherSrt   `json:"srt"`
+}
+
+// GetManagedStreamLiveInputPublisherAudio is an object of the Managed API (first seen in getManagedStreamLive response.inputs.input.publishers.publisher.audio).
+type GetManagedStreamLiveInputPublisherAudio struct {
+	Codec       string  `json:"codec"`
+	SampleRate  float64 `json:"sampleRate"`
+	Channels    float64 `json:"channels"`
+	BitrateKbps float64 `json:"bitrateKbps"`
+}
+
+// GetManagedStreamLiveInputPublisherSrt is an object of the Managed API (first seen in getManagedStreamLive response.inputs.input.publishers.publisher.srt).
+type GetManagedStreamLiveInputPublisherSrt struct {
+	RttMs       float64 `json:"rttMs"`
+	LossPct     float64 `json:"lossPct"`
+	Retransmits float64 `json:"retransmits"`
+	LatencyMs   float64 `json:"latencyMs"`
+}
+
+// GetManagedStreamLiveInputPublisherVideo is an object of the Managed API (first seen in getManagedStreamLive response.inputs.input.publishers.publisher.video).
+type GetManagedStreamLiveInputPublisherVideo struct {
+	Codec              string  `json:"codec"`
+	Width              float64 `json:"width"`
+	Height             float64 `json:"height"`
+	Fps                float64 `json:"fps"`
+	BitrateKbps        float64 `json:"bitrateKbps"`
+	KeyframeIntervalMs float64 `json:"keyframeIntervalMs"`
+	Bframes            bool    `json:"bframes"`
+}
+
+// GetManagedStreamLiveMixer is an object of the Managed API (first seen in getManagedStreamLive response.mixers.mixer).
+type GetManagedStreamLiveMixer struct {
+	ID             string  `json:"id"`
+	State          string  `json:"state"` // One of "rejected", "stopped", "running", "waiting", "error".
+	ActiveScene    string  `json:"activeScene"`
+	ProcessingMbps float64 `json:"processingMbps"`
+	Error          *string `json:"error,omitempty"`
+}
+
+// GetManagedStreamLiveResponse is an object of the Managed API (first seen in getManagedStreamLive response).
+type GetManagedStreamLiveResponse struct {
+	Server       GetManagedStreamLiveServer        `json:"server"`
+	Inputs       []GetManagedStreamLiveInput       `json:"inputs"`
+	Mixers       []GetManagedStreamLiveMixer       `json:"mixers"`
+	Channels     []GetManagedStreamLiveChannel     `json:"channels"`
+	Destinations []GetManagedStreamLiveDestination `json:"destinations"`
+	Schedules    []GetManagedStreamLiveSchedule    `json:"schedules"`
+}
+
+// GetManagedStreamLiveSchedule is an object of the Managed API (first seen in getManagedStreamLive response.schedules.schedule).
+type GetManagedStreamLiveSchedule struct {
+	ID       string                                `json:"id"`
+	NextFire *string                               `json:"nextFire"`
+	LastFire *GetManagedStreamLiveScheduleLastFire `json:"lastFire"`
+}
+
+// GetManagedStreamLiveScheduleLastFire is an object of the Managed API (first seen in getManagedStreamLive response.schedules.schedule.lastFire).
+type GetManagedStreamLiveScheduleLastFire struct {
+	At     string `json:"at"`
+	Status string `json:"status"` // One of "error", "ok", "missed".
+}
+
+// GetManagedStreamLiveServer is an object of the Managed API (first seen in getManagedStreamLive response.server).
+type GetManagedStreamLiveServer struct {
+	RunState           string                                     `json:"runState"` // One of "stopped", "running".
+	Billing            CreateManagedInstanceInstanceStreamBilling `json:"billing"`
+	EgressMbps         float64                                    `json:"egressMbps"`
+	SpeedMbps          float64                                    `json:"speedMbps"`
+	Throttled          bool                                       `json:"throttled"`
+	ProcessingMbpsUsed float64                                    `json:"processingMbpsUsed"`
+	ProcessingMbps     float64                                    `json:"processingMbps"`
+	Viewers            float64                                    `json:"viewers"`
+	WebrtcSessions     float64                                    `json:"webrtcSessions"`
+}
+
+// GetManagedStreamMixerResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId (getManagedStreamMixer).
+type GetManagedStreamMixerResponse = CreateManagedStreamMixerMixer
+
+// GetManagedStreamPlaylistResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId (getManagedStreamPlaylist).
+type GetManagedStreamPlaylistResponse = CreateManagedStreamPlaylistPlaylist
+
+// GetManagedStreamScheduleResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId (getManagedStreamSchedule).
+type GetManagedStreamScheduleResponse = CreateManagedStreamScheduleSchedule
+
+// GetManagedStreamServerResponse is an object of the Managed API (first seen in getManagedStreamServer response).
+type GetManagedStreamServerResponse struct {
+	Host           string                                     `json:"host"`
+	SpeedMbps      float64                                    `json:"speedMbps"`
+	ProcessingMbps float64                                    `json:"processingMbps"`
+	WebrtcSessions float64                                    `json:"webrtcSessions"`
+	Timezone       string                                     `json:"timezone"`
+	Sync           CreateManagedInstanceInstanceStreamSync    `json:"sync"`
+	Billing        CreateManagedInstanceInstanceStreamBilling `json:"billing"`
+	Ingest         CreateManagedInstanceInstanceStreamIngest  `json:"ingest"`
+	Live           *CreateManagedInstanceInstanceStreamLive   `json:"live"`
+	Price          CreateManagedInstanceInstanceStreamPrice   `json:"price"`
+	OfflineSlate   *string                                    `json:"offlineSlate"`
+	AllowedOrigins []string                                   `json:"allowedOrigins"`
+	StudioOrigins  []string                                   `json:"studioOrigins"`
+}
+
+// GetManagedStreamStatsPoint is an object of the Managed API (first seen in getManagedStreamStats response.points.point).
+type GetManagedStreamStatsPoint struct {
+	Minute        string             `json:"minute"`
+	Channel       string             `json:"channel"`
+	Viewers       float64            `json:"viewers"`
+	ViewerSeconds float64            `json:"viewerSeconds"`
+	EgressBytes   float64            `json:"egressBytes"`
+	Countries     map[string]float64 `json:"countries"`
+}
+
+// GetManagedStreamStatsResponse is an object of the Managed API (first seen in getManagedStreamStats response).
+type GetManagedStreamStatsResponse struct {
+	Points []GetManagedStreamStatsPoint `json:"points"`
+}
+
+// GetManagedStreamUsageFree is an object of the Managed API (first seen in getManagedStreamUsage response.free).
+type GetManagedStreamUsageFree struct {
+	BandwidthGbUsed          float64 `json:"bandwidthGbUsed"`
+	BandwidthGbTotal         float64 `json:"bandwidthGbTotal"`
+	ProcessingMbpsHoursUsed  float64 `json:"processingMbpsHoursUsed"`
+	ProcessingMbpsHoursTotal float64 `json:"processingMbpsHoursTotal"`
+	FreeSpeedMbps            float64 `json:"freeSpeedMbps"`
+}
+
+// GetManagedStreamUsageHourlyItem is an object of the Managed API (first seen in getManagedStreamUsage response.hourly.hourlyItem).
+type GetManagedStreamUsageHourlyItem struct {
+	PeakViewers         float64                                 `json:"peakViewers"`
+	Hour                string                                  `json:"hour"`
+	SpeedMbpsHours      float64                                 `json:"speedMbpsHours"`
+	ProcessingMbpsHours float64                                 `json:"processingMbpsHours"`
+	ViewerHours         float64                                 `json:"viewerHours"`
+	CostUsd             float64                                 `json:"costUsd"`
+	EgressGb            GetManagedStreamUsageHourlyItemEgressGb `json:"egressGb"`
+}
+
+// GetManagedStreamUsageHourlyItemEgressGb is an object of the Managed API (first seen in getManagedStreamUsage response.hourly.hourlyItem.egressGb).
+type GetManagedStreamUsageHourlyItemEgressGb struct {
+	Hls     float64 `json:"hls"`
+	Webrtc  float64 `json:"webrtc"`
+	Icecast float64 `json:"icecast"`
+	Push    float64 `json:"push"`
+	Pull    float64 `json:"pull"`
+}
+
+// GetManagedStreamUsageResponse is an object of the Managed API (first seen in getManagedStreamUsage response).
+type GetManagedStreamUsageResponse struct {
+	Month             string                            `json:"month"`
+	Free              GetManagedStreamUsageFree         `json:"free"`
+	Totals            GetManagedStreamUsageTotals       `json:"totals"`
+	EstimatedMonthUsd float64                           `json:"estimatedMonthUsd"`
+	Hourly            []GetManagedStreamUsageHourlyItem `json:"hourly"`
+	Mode              string                            `json:"mode"` // One of "off", "write", "shadow".
+	Charged           bool                              `json:"charged"`
+}
+
+// GetManagedStreamUsageTotals is an object of the Managed API (first seen in getManagedStreamUsage response.totals).
+type GetManagedStreamUsageTotals struct {
+	SpeedMbpsHours      float64 `json:"speedMbpsHours"`
+	ProcessingMbpsHours float64 `json:"processingMbpsHours"`
+	BandwidthGb         float64 `json:"bandwidthGb"`
+	CostUsd             float64 `json:"costUsd"`
+}
+
 // GetManagedWorkspaceCost is an object of the Managed API (first seen in getManagedWorkspace response.cost).
 type GetManagedWorkspaceCost struct {
 	Hourly  float64 `json:"hourly"`
@@ -1006,6 +3594,7 @@ type GetManagedWorkspaceCounts struct {
 type GetManagedWorkspaceLimits struct {
 	MaxInstancesPerAccount         float64 `json:"maxInstancesPerAccount"`
 	MaxRealtimeInstancesPerAccount float64 `json:"maxRealtimeInstancesPerAccount"`
+	MaxStreamInstancesPerAccount   float64 `json:"maxStreamInstancesPerAccount"`
 }
 
 // GetManagedWorkspaceResponse is an object of the Managed API (first seen in getManagedWorkspace response).
@@ -1015,11 +3604,511 @@ type GetManagedWorkspaceResponse struct {
 	Limits GetManagedWorkspaceLimits `json:"limits"`
 }
 
+// GetStreamPriceEstimateResponse is the data of GET /api/v1/managed/streams/price (getStreamPriceEstimate).
+type GetStreamPriceEstimateResponse = GetManagedCatalogStreamsStartingPrice
+
+// ListManagedStreamBindingsResponse is an object of the Managed API (first seen in listManagedStreamBindings response).
+type ListManagedStreamBindingsResponse struct {
+	Items []CreateManagedStreamBindingResponse `json:"items"`
+}
+
+// ListManagedStreamChannelsResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels (listManagedStreamChannels).
+type ListManagedStreamChannelsResponse = []CreateManagedStreamChannelChannel
+
+// ListManagedStreamDestinationsResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations (listManagedStreamDestinations).
+type ListManagedStreamDestinationsResponse = []CreateManagedStreamDestinationDestination
+
+// ListManagedStreamDomainsResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains (listManagedStreamDomains).
+type ListManagedStreamDomainsResponse = []CreateManagedStreamDomainDomain
+
+// ListManagedStreamEventsEvent merges the variants ListManagedStreamEventsEventInputConnected, ListManagedStreamEventsEventInputDisconnected, ListManagedStreamEventsEventInputFailover, ListManagedStreamEventsEventChannelLive, ListManagedStreamEventsEventChannelOffline, ListManagedStreamEventsEventDestinationConnected, ListManagedStreamEventsEventDestinationFailed, ListManagedStreamEventsEventDestinationStopped, ListManagedStreamEventsEventRecordingStarted, ListManagedStreamEventsEventRecordingCompleted, ListManagedStreamEventsEventRecordingFailed, ListManagedStreamEventsEventClipCompleted, ListManagedStreamEventsEventClipFailed, ListManagedStreamEventsEventScheduleFired, ListManagedStreamEventsEventScheduleMissed, ListManagedStreamEventsEventScheduleFailed, ListManagedStreamEventsEventProcessingRejected, ListManagedStreamEventsEventSpeedThrottled, ListManagedStreamEventsEventBillingBlocked, ListManagedStreamEventsEventBillingUnblocked, ListManagedStreamEventsEventPlaylistItem; fields of other variants are empty.
+type ListManagedStreamEventsEvent struct {
+	Seq  string          `json:"seq"`
+	ID   string          `json:"id"`
+	At   string          `json:"at"`
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
+}
+
+// ListManagedStreamEventsEventBillingBlocked is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventBillingBlocked struct {
+	Seq  string                                         `json:"seq"`
+	ID   string                                         `json:"id"`
+	At   string                                         `json:"at"`
+	Type string                                         `json:"type"` // Always "billing.blocked".
+	Data ListManagedStreamEventsEventBillingBlockedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventBillingBlockedData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventBillingBlockedData struct {
+	Reason *string `json:"reason"` // One of "suspended", "balance", "spend_cap".
+}
+
+// ListManagedStreamEventsEventBillingUnblocked is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventBillingUnblocked struct {
+	Seq  string                                         `json:"seq"`
+	ID   string                                         `json:"id"`
+	At   string                                         `json:"at"`
+	Type string                                         `json:"type"` // Always "billing.unblocked".
+	Data ListManagedStreamEventsEventBillingBlockedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventChannelLive is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventChannelLive struct {
+	Seq  string                                      `json:"seq"`
+	ID   string                                      `json:"id"`
+	At   string                                      `json:"at"`
+	Type string                                      `json:"type"` // Always "channel.live".
+	Data ListManagedStreamEventsEventChannelLiveData `json:"data"`
+}
+
+// ListManagedStreamEventsEventChannelLiveData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventChannelLiveData struct {
+	Channel string `json:"channel"`
+}
+
+// ListManagedStreamEventsEventChannelOffline is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventChannelOffline struct {
+	Seq  string                                      `json:"seq"`
+	ID   string                                      `json:"id"`
+	At   string                                      `json:"at"`
+	Type string                                      `json:"type"` // Always "channel.offline".
+	Data ListManagedStreamEventsEventChannelLiveData `json:"data"`
+}
+
+// ListManagedStreamEventsEventClipCompleted is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventClipCompleted struct {
+	Seq  string                                        `json:"seq"`
+	ID   string                                        `json:"id"`
+	At   string                                        `json:"at"`
+	Type string                                        `json:"type"` // Always "clip.completed".
+	Data ListManagedStreamEventsEventClipCompletedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventClipCompletedData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventClipCompletedData struct {
+	Clip        string  `json:"clip"`
+	Channel     string  `json:"channel"`
+	StorageLink string  `json:"storageLink"`
+	ObjectKey   string  `json:"objectKey"`
+	Bytes       float64 `json:"bytes"`
+	DurationMs  float64 `json:"durationMs"`
+	Name        string  `json:"name"`
+}
+
+// ListManagedStreamEventsEventClipFailed is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventClipFailed struct {
+	Seq  string                                     `json:"seq"`
+	ID   string                                     `json:"id"`
+	At   string                                     `json:"at"`
+	Type string                                     `json:"type"` // Always "clip.failed".
+	Data ListManagedStreamEventsEventClipFailedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventClipFailedData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventClipFailedData struct {
+	Clip        string  `json:"clip"`
+	Channel     string  `json:"channel"`
+	StorageLink string  `json:"storageLink,omitempty"`
+	ObjectKey   string  `json:"objectKey,omitempty"`
+	Bytes       float64 `json:"bytes,omitempty"`
+	DurationMs  float64 `json:"durationMs,omitempty"`
+	Name        string  `json:"name"`
+	Error       string  `json:"error,omitempty"`
+}
+
+// ListManagedStreamEventsEventDestinationConnected is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventDestinationConnected struct {
+	Seq  string                                               `json:"seq"`
+	ID   string                                               `json:"id"`
+	At   string                                               `json:"at"`
+	Type string                                               `json:"type"` // Always "destination.connected".
+	Data ListManagedStreamEventsEventDestinationConnectedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventDestinationConnectedData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventDestinationConnectedData struct {
+	Destination string  `json:"destination"`
+	Error       string  `json:"error,omitempty"`
+	RetryInMs   float64 `json:"retryInMs,omitempty"`
+}
+
+// ListManagedStreamEventsEventDestinationFailed is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventDestinationFailed struct {
+	Seq  string                                               `json:"seq"`
+	ID   string                                               `json:"id"`
+	At   string                                               `json:"at"`
+	Type string                                               `json:"type"` // Always "destination.failed".
+	Data ListManagedStreamEventsEventDestinationConnectedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventDestinationStopped is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventDestinationStopped struct {
+	Seq  string                                               `json:"seq"`
+	ID   string                                               `json:"id"`
+	At   string                                               `json:"at"`
+	Type string                                               `json:"type"` // Always "destination.stopped".
+	Data ListManagedStreamEventsEventDestinationConnectedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventInputConnected is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventInputConnected struct {
+	Seq  string                                         `json:"seq"`
+	ID   string                                         `json:"id"`
+	At   string                                         `json:"at"`
+	Type string                                         `json:"type"` // Always "input.connected".
+	Data ListManagedStreamEventsEventInputConnectedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventInputConnectedData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventInputConnectedData struct {
+	Input    string `json:"input"`
+	Role     string `json:"role"` // One of "primary", "backup".
+	Protocol string `json:"protocol"`
+	Reason   string `json:"reason,omitempty"`
+}
+
+// ListManagedStreamEventsEventInputDisconnected is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventInputDisconnected struct {
+	Seq  string                                         `json:"seq"`
+	ID   string                                         `json:"id"`
+	At   string                                         `json:"at"`
+	Type string                                         `json:"type"` // Always "input.disconnected".
+	Data ListManagedStreamEventsEventInputConnectedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventInputFailover is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventInputFailover struct {
+	Seq  string                                        `json:"seq"`
+	ID   string                                        `json:"id"`
+	At   string                                        `json:"at"`
+	Type string                                        `json:"type"` // Always "input.failover".
+	Data ListManagedStreamEventsEventInputFailoverData `json:"data"`
+}
+
+// ListManagedStreamEventsEventInputFailoverData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventInputFailoverData struct {
+	Input   string `json:"input,omitempty"`
+	Channel string `json:"channel,omitempty"`
+	From    string `json:"from"`
+	To      string `json:"to"`
+}
+
+// ListManagedStreamEventsEventPlaylistItem is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventPlaylistItem struct {
+	Seq  string                                       `json:"seq"`
+	ID   string                                       `json:"id"`
+	At   string                                       `json:"at"`
+	Type string                                       `json:"type"` // Always "playlist.item".
+	Data ListManagedStreamEventsEventPlaylistItemData `json:"data"`
+}
+
+// ListManagedStreamEventsEventPlaylistItemData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventPlaylistItemData struct {
+	Channel  string  `json:"channel"`
+	Playlist string  `json:"playlist"`
+	Item     float64 `json:"item"`
+	Title    string  `json:"title"`
+}
+
+// ListManagedStreamEventsEventProcessingRejected is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventProcessingRejected struct {
+	Seq  string                                             `json:"seq"`
+	ID   string                                             `json:"id"`
+	At   string                                             `json:"at"`
+	Type string                                             `json:"type"` // Always "processing.rejected".
+	Data ListManagedStreamEventsEventProcessingRejectedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventProcessingRejectedData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventProcessingRejectedData struct {
+	Channel       string  `json:"channel,omitempty"`
+	Mixer         string  `json:"mixer,omitempty"`
+	NeededMbps    float64 `json:"neededMbps"`
+	AvailableMbps float64 `json:"availableMbps"`
+}
+
+// ListManagedStreamEventsEventRecordingCompleted is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventRecordingCompleted struct {
+	Seq  string                                             `json:"seq"`
+	ID   string                                             `json:"id"`
+	At   string                                             `json:"at"`
+	Type string                                             `json:"type"` // Always "recording.completed".
+	Data ListManagedStreamEventsEventRecordingCompletedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventRecordingCompletedData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventRecordingCompletedData struct {
+	Recording     string  `json:"recording"`
+	Channel       string  `json:"channel"`
+	StorageLink   string  `json:"storageLink"`
+	ObjectKey     string  `json:"objectKey"`
+	Part          float64 `json:"part"`
+	Bytes         float64 `json:"bytes"`
+	DurationMs    float64 `json:"durationMs"`
+	StartedAt     string  `json:"startedAt"`
+	EndedAt       string  `json:"endedAt"`
+	RegisterAsset bool    `json:"registerAsset"`
+}
+
+// ListManagedStreamEventsEventRecordingFailed is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventRecordingFailed struct {
+	Seq  string                                          `json:"seq"`
+	ID   string                                          `json:"id"`
+	At   string                                          `json:"at"`
+	Type string                                          `json:"type"` // Always "recording.failed".
+	Data ListManagedStreamEventsEventRecordingFailedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventRecordingFailedData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventRecordingFailedData struct {
+	Recording string `json:"recording"`
+	Channel   string `json:"channel"`
+	Error     string `json:"error"`
+}
+
+// ListManagedStreamEventsEventRecordingStarted is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventRecordingStarted struct {
+	Seq  string                                           `json:"seq"`
+	ID   string                                           `json:"id"`
+	At   string                                           `json:"at"`
+	Type string                                           `json:"type"` // Always "recording.started".
+	Data ListManagedStreamEventsEventRecordingStartedData `json:"data"`
+}
+
+// ListManagedStreamEventsEventRecordingStartedData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventRecordingStartedData struct {
+	Recording string `json:"recording"`
+	Channel   string `json:"channel"`
+}
+
+// ListManagedStreamEventsEventScheduleFailed is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventScheduleFailed struct {
+	Seq  string                                        `json:"seq"`
+	ID   string                                        `json:"id"`
+	At   string                                        `json:"at"`
+	Type string                                        `json:"type"` // Always "schedule.failed".
+	Data ListManagedStreamEventsEventScheduleFiredData `json:"data"`
+}
+
+// ListManagedStreamEventsEventScheduleFired is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventScheduleFired struct {
+	Seq  string                                        `json:"seq"`
+	ID   string                                        `json:"id"`
+	At   string                                        `json:"at"`
+	Type string                                        `json:"type"` // Always "schedule.fired".
+	Data ListManagedStreamEventsEventScheduleFiredData `json:"data"`
+}
+
+// ListManagedStreamEventsEventScheduleFiredData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventScheduleFiredData struct {
+	Schedule string `json:"schedule"`
+	FireID   string `json:"fireId"`
+	Phase    string `json:"phase"` // One of "start", "end".
+	At       string `json:"at"`
+	Error    string `json:"error,omitempty"`
+}
+
+// ListManagedStreamEventsEventScheduleMissed is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventScheduleMissed struct {
+	Seq  string                                        `json:"seq"`
+	ID   string                                        `json:"id"`
+	At   string                                        `json:"at"`
+	Type string                                        `json:"type"` // Always "schedule.missed".
+	Data ListManagedStreamEventsEventScheduleFiredData `json:"data"`
+}
+
+// ListManagedStreamEventsEventSpeedThrottled is an object of the Managed API (first seen in listManagedStreamEvents response.events.event).
+type ListManagedStreamEventsEventSpeedThrottled struct {
+	Seq  string                                         `json:"seq"`
+	ID   string                                         `json:"id"`
+	At   string                                         `json:"at"`
+	Type string                                         `json:"type"` // Always "speed.throttled".
+	Data ListManagedStreamEventsEventSpeedThrottledData `json:"data"`
+}
+
+// ListManagedStreamEventsEventSpeedThrottledData is an object of the Managed API (first seen in listManagedStreamEvents response.events.event.data).
+type ListManagedStreamEventsEventSpeedThrottledData struct {
+	EgressMbps float64 `json:"egressMbps"`
+	SpeedMbps  float64 `json:"speedMbps"`
+}
+
+// ListManagedStreamEventsResponse is an object of the Managed API (first seen in listManagedStreamEvents response).
+type ListManagedStreamEventsResponse struct {
+	Events     []ListManagedStreamEventsEvent `json:"events"`
+	NextCursor string                         `json:"nextCursor"`
+}
+
+// ListManagedStreamGraphicsItem is an object of the Managed API (first seen in listManagedStreamGraphics response.item).
+type ListManagedStreamGraphicsItem struct {
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
+	Kind            string            `json:"kind"` // One of "image", "svg", "html", "font".
+	Sha256          string            `json:"sha256"`
+	Bytes           float64           `json:"bytes"`
+	ContentType     string            `json:"contentType"`
+	Variables       map[string]string `json:"variables"`
+	UploadedAt      *string           `json:"uploadedAt"`
+	Revision        float64           `json:"revision"`
+	CreatedByUserID *string           `json:"createdByUserId"`
+	CreatedAt       string            `json:"createdAt"`
+	UpdatedAt       string            `json:"updatedAt"`
+}
+
+// ListManagedStreamGraphicsResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics (listManagedStreamGraphics).
+type ListManagedStreamGraphicsResponse = []ListManagedStreamGraphicsItem
+
+// ListManagedStreamInputsItem is an object of the Managed API (first seen in listManagedStreamInputs response.item).
+type ListManagedStreamInputsItem struct {
+	ID               string                                `json:"id"`
+	Name             string                                `json:"name"`
+	Kind             string                                `json:"kind"` // One of "push", "pull".
+	Enabled          bool                                  `json:"enabled"`
+	Protocols        []string                              `json:"protocols"`
+	MaxBitrateKbps   float64                               `json:"maxBitrateKbps"`
+	AllowedCidrs     []string                              `json:"allowedCidrs"`
+	CreatedAt        string                                `json:"createdAt"`
+	UpdatedAt        string                                `json:"updatedAt"`
+	Revision         float64                               `json:"revision"`
+	KeyHints         CreateManagedStreamInputInputKeyHints `json:"keyHints"`
+	KeyFingerprints  CreateManagedStreamInputInputKeyHints `json:"keyFingerprints"`
+	HasSrtPassphrase bool                                  `json:"hasSrtPassphrase"`
+	Pull             *CreateManagedStreamInputInputPull    `json:"pull"`
+}
+
+// ListManagedStreamInputsResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs (listManagedStreamInputs).
+type ListManagedStreamInputsResponse = []ListManagedStreamInputsItem
+
+// ListManagedStreamMixersResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers (listManagedStreamMixers).
+type ListManagedStreamMixersResponse = []CreateManagedStreamMixerMixer
+
+// ListManagedStreamPlaybackKeysResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys (listManagedStreamPlaybackKeys).
+type ListManagedStreamPlaybackKeysResponse = []CreateManagedStreamPlaybackKeyKey
+
+// ListManagedStreamPlaylistsResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists (listManagedStreamPlaylists).
+type ListManagedStreamPlaylistsResponse = []CreateManagedStreamPlaylistPlaylist
+
+// ListManagedStreamRecordingsItem is an object of the Managed API (first seen in listManagedStreamRecordings response.items.item).
+type ListManagedStreamRecordingsItem struct {
+	ID               string                                      `json:"id"`
+	ChannelID        string                                      `json:"channelId"`
+	Kind             string                                      `json:"kind"` // One of "recording", "clip".
+	Name             *string                                     `json:"name"`
+	Part             float64                                     `json:"part"`
+	Status           string                                      `json:"status"` // One of "failed", "completed", "recording", "uploading", "registered".
+	StorageLinkID    *string                                     `json:"storageLinkId"`
+	StorageProjectID *string                                     `json:"storageProjectId"`
+	Bucket           *string                                     `json:"bucket"`
+	ObjectKey        *string                                     `json:"objectKey"`
+	StorageAssetID   *string                                     `json:"storageAssetId"`
+	Bytes            *float64                                    `json:"bytes"`
+	DurationMs       *float64                                    `json:"durationMs"`
+	StartedAt        *string                                     `json:"startedAt"`
+	EndedAt          *string                                     `json:"endedAt"`
+	Error            *string                                     `json:"error"`
+	CreatedAt        string                                      `json:"createdAt"`
+	UpdatedAt        string                                      `json:"updatedAt"`
+	StorageLink      *ListManagedStreamRecordingsItemStorageLink `json:"storageLink"`
+}
+
+// ListManagedStreamRecordingsItemStorageLink is an object of the Managed API (first seen in listManagedStreamRecordings response.items.item.storageLink).
+type ListManagedStreamRecordingsItemStorageLink struct {
+	ID               string `json:"id"`
+	StorageProjectID string `json:"storageProjectId"`
+	Bucket           string `json:"bucket"`
+	Mode             string `json:"mode"`
+}
+
+// ListManagedStreamRecordingsResponse is an object of the Managed API (first seen in listManagedStreamRecordings response).
+type ListManagedStreamRecordingsResponse struct {
+	Items      []ListManagedStreamRecordingsItem `json:"items"`
+	NextCursor *string                           `json:"nextCursor"`
+}
+
+// ListManagedStreamScheduleRunsResponse is an object of the Managed API (first seen in listManagedStreamScheduleRuns response).
+type ListManagedStreamScheduleRunsResponse struct {
+	Runs       []ListManagedStreamScheduleRunsRun `json:"runs"`
+	NextCursor *string                            `json:"nextCursor"`
+}
+
+// ListManagedStreamScheduleRunsRun is an object of the Managed API (first seen in listManagedStreamScheduleRuns response.runs.run).
+type ListManagedStreamScheduleRunsRun struct {
+	ID         string  `json:"id"`
+	ScheduleID string  `json:"scheduleId"`
+	Phase      string  `json:"phase"`  // One of "start", "end".
+	Status     string  `json:"status"` // One of "failed", "ok", "missed".
+	FiredAt    string  `json:"firedAt"`
+	Error      *string `json:"error"`
+}
+
+// ListManagedStreamSchedulesResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules (listManagedStreamSchedules).
+type ListManagedStreamSchedulesResponse = []CreateManagedStreamScheduleSchedule
+
+// ListManagedStreamStorageAssetsAsset is an object of the Managed API (first seen in listManagedStreamStorageAssets response.assets.asset).
+type ListManagedStreamStorageAssetsAsset struct {
+	AssetID         string                                         `json:"assetId"`
+	Title           string                                         `json:"title"`
+	ObjectKey       string                                         `json:"objectKey"`
+	ContentType     *string                                        `json:"contentType"`
+	SizeBytes       float64                                        `json:"sizeBytes"`
+	DurationSeconds *float64                                       `json:"durationSeconds"`
+	HlsReady        bool                                           `json:"hlsReady"`
+	HlsObjectKey    *string                                        `json:"hlsObjectKey"`
+	Renditions      []ListManagedStreamStorageAssetsAssetRendition `json:"renditions"`
+	CreatedAt       string                                         `json:"createdAt"`
+}
+
+// ListManagedStreamStorageAssetsAssetRendition is an object of the Managed API (first seen in listManagedStreamStorageAssets response.assets.asset.renditions.rendition).
+type ListManagedStreamStorageAssetsAssetRendition struct {
+	Height float64 `json:"height"`
+	State  string  `json:"state"`
+}
+
+// ListManagedStreamStorageAssetsLink is an object of the Managed API (first seen in listManagedStreamStorageAssets response.link).
+type ListManagedStreamStorageAssetsLink struct {
+	ID               string `json:"id"`
+	StorageProjectID string `json:"storageProjectId"`
+	Bucket           string `json:"bucket"`
+	Mode             string `json:"mode"`
+}
+
+// ListManagedStreamStorageAssetsResponse is an object of the Managed API (first seen in listManagedStreamStorageAssets response).
+type ListManagedStreamStorageAssetsResponse struct {
+	Link   ListManagedStreamStorageAssetsLink    `json:"link"`
+	Assets []ListManagedStreamStorageAssetsAsset `json:"assets"`
+}
+
+// ListManagedStreamStorageLinksResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links (listManagedStreamStorageLinks).
+type ListManagedStreamStorageLinksResponse = []CreateManagedStreamStorageLinkStorageLink
+
+// ListManagedStreamWebhookDeliveriesDelivery is an object of the Managed API (first seen in listManagedStreamWebhookDeliveries response.deliveries.delivery).
+type ListManagedStreamWebhookDeliveriesDelivery struct {
+	ID            string   `json:"id"`
+	Webhook       string   `json:"webhook"`
+	Event         string   `json:"event"`
+	Type          string   `json:"type"`
+	Attempt       float64  `json:"attempt"`
+	Status        string   `json:"status"` // One of "pending", "failed", "delivered".
+	HTTPStatus    *float64 `json:"httpStatus"`
+	Error         *string  `json:"error"`
+	At            string   `json:"at"`
+	NextAttemptAt *string  `json:"nextAttemptAt"`
+}
+
+// ListManagedStreamWebhookDeliveriesResponse is an object of the Managed API (first seen in listManagedStreamWebhookDeliveries response).
+type ListManagedStreamWebhookDeliveriesResponse struct {
+	Deliveries []ListManagedStreamWebhookDeliveriesDelivery `json:"deliveries"`
+	NextCursor *string                                      `json:"nextCursor"`
+}
+
+// ListManagedStreamWebhooksResponse is the data of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks (listManagedStreamWebhooks).
+type ListManagedStreamWebhooksResponse = []CreateManagedStreamWebhookWebhook
+
 // ManagedActiveOperation is an object of the Managed API (first seen in createManagedInstance response.instance.activeOperation).
 type ManagedActiveOperation struct {
 	ID        string  `json:"id"`
-	Kind      string  `json:"kind"`   // One of "create", "restart", "delete", "resize", "start", "stop", "config_apply", "network_update", "upgrade", "export", "import".
-	Status    string  `json:"status"` // One of "failed", "succeeded", "queued", "running", "canceled".
+	Kind      string  `json:"kind"`   // One of "create", "restart", "delete", "start", "resize", "stop", "config_apply", "network_update", "upgrade", "export", "import".
+	Status    string  `json:"status"` // One of "failed", "succeeded", "canceled", "queued", "running".
 	StepIndex float64 `json:"stepIndex"`
 	StepCount float64 `json:"stepCount"`
 	StepLabel *string `json:"stepLabel"`
@@ -1150,7 +4239,7 @@ type ManagedConfigSetting struct {
 	Key             string   `json:"key"`
 	Value           *string  `json:"value"`
 	DefaultValue    *string  `json:"defaultValue"`
-	Type            string   `json:"type"` // One of "string", "boolean", "duration", "integer", "real", "bytes", "enum".
+	Type            string   `json:"type"` // One of "string", "boolean", "duration", "bytes", "integer", "real", "enum".
 	Unit            *string  `json:"unit"`
 	Min             *string  `json:"min"`
 	Max             *string  `json:"max"`
@@ -1258,67 +4347,69 @@ type ManagedErrorInfo struct {
 
 // ManagedFiringAlert is an object of the Managed API (first seen in getManagedInstanceAlerts response.firing.firingItem).
 type ManagedFiringAlert struct {
-	Key   string `json:"key"` // One of "storage", "connections", "down", "webhooks".
+	Key   string `json:"key"` // One of "storage", "connections", "down", "webhooks", "stream_destinations", "stream_processing", "stream_speed", "stream_billing", "stream_domain".
 	Since string `json:"since"`
 }
 
 // ManagedInstance is an object of the Managed API (first seen in createManagedInstance response.instance).
 type ManagedInstance struct {
-	ID                 string                  `json:"id"`
-	Name               string                  `json:"name"`
-	Service            string                  `json:"service"` // One of "database", "realtime".
-	Engine             string                  `json:"engine"`  // One of "realtime", "postgresql", "mysql", "libsql".
-	EngineLabel        string                  `json:"engineLabel"`
-	Version            string                  `json:"version"`
-	VersionLabel       string                  `json:"versionLabel"`
-	EngineVersion      *string                 `json:"engineVersion"`
-	Status             string                  `json:"status"` // One of "failed", "provisioning", "stopped", "running", "deleting", "starting", "stopping", "deleted", "restarting", "updating".
-	StatusReason       *string                 `json:"statusReason"`
-	Size               ManagedInstanceSize     `json:"size"`
-	StorageUsedBytes   *float64                `json:"storageUsedBytes"`
-	StorageTotalBytes  *float64                `json:"storageTotalBytes"`
-	PublicAccess       bool                    `json:"publicAccess"`
-	AllowlistCount     float64                 `json:"allowlistCount"`
-	DeletionProtection bool                    `json:"deletionProtection"`
-	PendingRestart     bool                    `json:"pendingRestart"`
-	Price              ManagedPrice            `json:"price"`
-	ActiveOperation    *ManagedActiveOperation `json:"activeOperation"`
-	CreatedAt          string                  `json:"createdAt"`
+	ID                 string                               `json:"id"`
+	Name               string                               `json:"name"`
+	Service            string                               `json:"service"` // One of "database", "realtime", "stream".
+	Engine             string                               `json:"engine"`  // One of "realtime", "stream", "postgresql", "mysql", "libsql".
+	EngineLabel        string                               `json:"engineLabel"`
+	Version            string                               `json:"version"`
+	VersionLabel       string                               `json:"versionLabel"`
+	EngineVersion      *string                              `json:"engineVersion"`
+	Status             string                               `json:"status"` // One of "failed", "provisioning", "stopped", "running", "deleting", "starting", "stopping", "deleted", "restarting", "updating".
+	StatusReason       *string                              `json:"statusReason"`
+	Size               ManagedInstanceSize                  `json:"size"`
+	StorageUsedBytes   *float64                             `json:"storageUsedBytes"`
+	StorageTotalBytes  *float64                             `json:"storageTotalBytes"`
+	PublicAccess       bool                                 `json:"publicAccess"`
+	AllowlistCount     float64                              `json:"allowlistCount"`
+	DeletionProtection bool                                 `json:"deletionProtection"`
+	PendingRestart     bool                                 `json:"pendingRestart"`
+	Price              ManagedPrice                         `json:"price"`
+	ActiveOperation    *ManagedActiveOperation              `json:"activeOperation"`
+	CreatedAt          string                               `json:"createdAt"`
+	Stream             *CreateManagedInstanceInstanceStream `json:"stream,omitempty"`
 }
 
 // ManagedInstanceDetail is an object of the Managed API (first seen in getManagedInstance response).
 type ManagedInstanceDetail struct {
-	ID                   string                             `json:"id"`
-	Name                 string                             `json:"name"`
-	Service              string                             `json:"service"` // One of "database", "realtime".
-	Engine               string                             `json:"engine"`  // One of "realtime", "postgresql", "mysql", "libsql".
-	EngineLabel          string                             `json:"engineLabel"`
-	Version              string                             `json:"version"`
-	VersionLabel         string                             `json:"versionLabel"`
-	EngineVersion        *string                            `json:"engineVersion"`
-	Status               string                             `json:"status"` // One of "failed", "provisioning", "stopped", "running", "deleting", "starting", "stopping", "deleted", "restarting", "updating".
-	StatusReason         *string                            `json:"statusReason"`
-	Size                 ManagedInstanceSize                `json:"size"`
-	StorageUsedBytes     *float64                           `json:"storageUsedBytes"`
-	StorageTotalBytes    *float64                           `json:"storageTotalBytes"`
-	PublicAccess         bool                               `json:"publicAccess"`
-	AllowlistCount       float64                            `json:"allowlistCount"`
-	DeletionProtection   bool                               `json:"deletionProtection"`
-	PendingRestart       bool                               `json:"pendingRestart"`
-	Price                ManagedPrice                       `json:"price"`
-	ActiveOperation      *ManagedActiveOperation            `json:"activeOperation"`
-	CreatedAt            string                             `json:"createdAt"`
-	Endpoint             *ManagedInstanceEndpoint           `json:"endpoint"`
-	AdminUsername        *string                            `json:"adminUsername"`
-	DefaultDatabase      *string                            `json:"defaultDatabase"`
-	Capabilities         ManagedEngineCapabilities          `json:"capabilities"`
-	Backups              string                             `json:"backups"` // Always "coming_soon".
-	UpdateAvailable      *GetManagedInstanceUpdateAvailable `json:"updateAvailable"`
-	TLS                  *GetManagedInstanceTls             `json:"tls"`
-	CredentialsRotatedAt *string                            `json:"credentialsRotatedAt"`
-	LastObservedAt       *string                            `json:"lastObservedAt"`
-	UpdatedAt            string                             `json:"updatedAt"`
-	Realtime             *ManagedInstanceRealtime           `json:"realtime"`
+	ID                   string                               `json:"id"`
+	Name                 string                               `json:"name"`
+	Service              string                               `json:"service"` // One of "database", "realtime", "stream".
+	Engine               string                               `json:"engine"`  // One of "realtime", "stream", "postgresql", "mysql", "libsql".
+	EngineLabel          string                               `json:"engineLabel"`
+	Version              string                               `json:"version"`
+	VersionLabel         string                               `json:"versionLabel"`
+	EngineVersion        *string                              `json:"engineVersion"`
+	Status               string                               `json:"status"` // One of "failed", "provisioning", "stopped", "running", "deleting", "starting", "stopping", "deleted", "restarting", "updating".
+	StatusReason         *string                              `json:"statusReason"`
+	Size                 ManagedInstanceSize                  `json:"size"`
+	StorageUsedBytes     *float64                             `json:"storageUsedBytes"`
+	StorageTotalBytes    *float64                             `json:"storageTotalBytes"`
+	PublicAccess         bool                                 `json:"publicAccess"`
+	AllowlistCount       float64                              `json:"allowlistCount"`
+	DeletionProtection   bool                                 `json:"deletionProtection"`
+	PendingRestart       bool                                 `json:"pendingRestart"`
+	Price                ManagedPrice                         `json:"price"`
+	ActiveOperation      *ManagedActiveOperation              `json:"activeOperation"`
+	CreatedAt            string                               `json:"createdAt"`
+	Stream               *CreateManagedInstanceInstanceStream `json:"stream,omitempty"`
+	Endpoint             *ManagedInstanceEndpoint             `json:"endpoint"`
+	AdminUsername        *string                              `json:"adminUsername"`
+	DefaultDatabase      *string                              `json:"defaultDatabase"`
+	Capabilities         ManagedEngineCapabilities            `json:"capabilities"`
+	Backups              string                               `json:"backups"` // Always "coming_soon".
+	UpdateAvailable      *GetManagedInstanceUpdateAvailable   `json:"updateAvailable"`
+	TLS                  *GetManagedInstanceTls               `json:"tls"`
+	CredentialsRotatedAt *string                              `json:"credentialsRotatedAt"`
+	LastObservedAt       *string                              `json:"lastObservedAt"`
+	UpdatedAt            string                               `json:"updatedAt"`
+	Realtime             *ManagedInstanceRealtime             `json:"realtime"`
 }
 
 // ManagedInstanceEndpoint is an object of the Managed API (first seen in getManagedInstance response.endpoint).
@@ -1382,8 +4473,8 @@ type ManagedMetricsRecord struct {
 type ManagedOperation struct {
 	ID          string                 `json:"id"`
 	InstanceID  string                 `json:"instanceId"`
-	Kind        string                 `json:"kind"`   // One of "create", "restart", "delete", "resize", "start", "stop", "config_apply", "network_update", "upgrade", "export", "import".
-	Status      string                 `json:"status"` // One of "failed", "succeeded", "queued", "running", "canceled".
+	Kind        string                 `json:"kind"`   // One of "create", "restart", "delete", "start", "resize", "stop", "config_apply", "network_update", "upgrade", "export", "import".
+	Status      string                 `json:"status"` // One of "failed", "succeeded", "canceled", "queued", "running".
 	Steps       []ManagedOperationStep `json:"steps"`
 	Error       *ManagedErrorInfo      `json:"error"`
 	ActorUserID *string                `json:"actorUserId"`
@@ -2111,7 +5202,7 @@ type PostManagedInstanceQueryStatement struct {
 type PostManagedInstanceQueryStatementColumn struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
-	Kind string `json:"kind"` // One of "number", "boolean", "json", "text", "binary", "datetime", "other".
+	Kind string `json:"kind"` // One of "number", "boolean", "json", "other", "text", "binary", "datetime".
 }
 
 // PostManagedInstanceQueryStatementError is an object of the Managed API (first seen in postManagedInstanceQuery response.statements.statement.error).
@@ -2129,12 +5220,14 @@ type PostManagedInstanceResizeBody struct {
 	MemoryMib         *float64 `json:"memoryMib,omitempty"`
 	StorageGib        *float64 `json:"storageGib,omitempty"`
 	Restart           *bool    `json:"restart,omitempty"`
+	SpeedMbps         *float64 `json:"speedMbps,omitempty"`
+	ProcessingMbps    *float64 `json:"processingMbps,omitempty"`
 	QuotedHourlyTotal float64  `json:"quotedHourlyTotal"`
 }
 
 // MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
 func (v PostManagedInstanceResizeBody) MarshalJSON() ([]byte, error) {
-	m := make(map[string]any, 5)
+	m := make(map[string]any, 7)
 	if v.CPU != nil {
 		m["cpu"] = v.CPU
 	}
@@ -2146,6 +5239,12 @@ func (v PostManagedInstanceResizeBody) MarshalJSON() ([]byte, error) {
 	}
 	if v.Restart != nil {
 		m["restart"] = v.Restart
+	}
+	if v.SpeedMbps != nil {
+		m["speedMbps"] = v.SpeedMbps
+	}
+	if v.ProcessingMbps != nil {
+		m["processingMbps"] = v.ProcessingMbps
 	}
 	m["quotedHourlyTotal"] = v.QuotedHourlyTotal
 	return json.Marshal(m)
@@ -2410,6 +5509,299 @@ type PostManagedRealtimeWebhookTestResponse struct {
 	Error      *string  `json:"error"`
 }
 
+// PostManagedStreamControlBody is an object of the Managed API (first seen in postManagedStreamControl body).
+type PostManagedStreamControlBody struct {
+	ID  string                            `json:"id"`
+	Ops []PostManagedStreamControlOpInput `json:"ops"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v PostManagedStreamControlBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["id"] = v.ID
+	if v.Ops == nil {
+		m["ops"] = []PostManagedStreamControlOpInput{}
+	} else {
+		m["ops"] = v.Ops
+	}
+	return json.Marshal(m)
+}
+
+// PostManagedStreamControlOpClipCreateInput is an object of the Managed API (first seen in postManagedStreamControl body.ops.op).
+type PostManagedStreamControlOpClipCreateInput struct {
+	Op          string `json:"op"` // Always "clip.create".
+	Channel     string `json:"channel"`
+	From        string `json:"from"`
+	To          string `json:"to"`
+	Name        string `json:"name"`
+	StorageLink string `json:"storageLink,omitempty"`
+	Prefix      string `json:"prefix,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v PostManagedStreamControlOpClipCreateInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 7)
+	m["op"] = v.Op
+	m["channel"] = v.Channel
+	m["from"] = v.From
+	m["to"] = v.To
+	m["name"] = v.Name
+	if v.StorageLink != "" {
+		m["storageLink"] = v.StorageLink
+	}
+	if v.Prefix != "" {
+		m["prefix"] = v.Prefix
+	}
+	return json.Marshal(m)
+}
+
+// PostManagedStreamControlOpInput merges the variants CreateManagedStreamScheduleOnStartItemMixerSceneInput, CreateManagedStreamScheduleOnStartItemMixerLayerInput, CreateManagedStreamScheduleOnStartItemMixerAudioInput, CreateManagedStreamScheduleOnStartItemMixerTextInput, CreateManagedStreamScheduleOnStartItemGraphicsSetInput, CreateManagedStreamScheduleOnStartItemVariant6Input, CreateManagedStreamScheduleOnStartItemChannelSourceInput, CreateManagedStreamScheduleOnStartItemChannelSlateInput, CreateManagedStreamScheduleOnStartItemVariant9Input, CreateManagedStreamScheduleOnStartItemVariant10Input, PostManagedStreamControlOpClipCreateInput, CreateManagedStreamScheduleOnStartItemPlaylistPlayInput, CreateManagedStreamScheduleOnStartItemPlaylistNextInput, PostManagedStreamControlOpInputDisconnectInput; fields of other variants are empty.
+type PostManagedStreamControlOpInput struct {
+	Op          string                                       `json:"op"`
+	Mixer       string                                       `json:"mixer,omitempty"`
+	Scene       string                                       `json:"scene,omitempty"`
+	Transition  *CreateManagedStreamMixerTransitionInput     `json:"transition,omitempty"`
+	Source      json.RawMessage                              `json:"source,omitempty"`
+	X           *float64                                     `json:"x,omitempty"`
+	Y           *float64                                     `json:"y,omitempty"`
+	W           *float64                                     `json:"w,omitempty"`
+	H           *float64                                     `json:"h,omitempty"`
+	Crop        *CreateManagedStreamMixerSceneLayerCropInput `json:"crop,omitempty"`
+	Z           *float64                                     `json:"z,omitempty"`
+	Opacity     *float64                                     `json:"opacity,omitempty"`
+	Visible     *bool                                        `json:"visible,omitempty"`
+	GainDb      *float64                                     `json:"gainDb,omitempty"`
+	Muted       *bool                                        `json:"muted,omitempty"`
+	Text        string                                       `json:"text,omitempty"`
+	Graphic     string                                       `json:"graphic,omitempty"`
+	Variables   map[string]string                            `json:"variables,omitempty"`
+	Channel     string                                       `json:"channel,omitempty"`
+	On          *bool                                        `json:"on,omitempty"`
+	Slate       string                                       `json:"slate,omitempty"`
+	Destination string                                       `json:"destination,omitempty"`
+	From        string                                       `json:"from,omitempty"`
+	To          string                                       `json:"to,omitempty"`
+	Name        string                                       `json:"name,omitempty"`
+	StorageLink string                                       `json:"storageLink,omitempty"`
+	Prefix      string                                       `json:"prefix,omitempty"`
+	Playlist    string                                       `json:"playlist,omitempty"`
+	Item        *float64                                     `json:"item,omitempty"`
+	Input       string                                       `json:"input,omitempty"`
+	Role        string                                       `json:"role,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v PostManagedStreamControlOpInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 31)
+	m["op"] = v.Op
+	if v.Mixer != "" {
+		m["mixer"] = v.Mixer
+	}
+	if v.Scene != "" {
+		m["scene"] = v.Scene
+	}
+	if v.Transition != nil {
+		m["transition"] = v.Transition
+	}
+	m["source"] = v.Source
+	if v.X != nil {
+		m["x"] = v.X
+	}
+	if v.Y != nil {
+		m["y"] = v.Y
+	}
+	if v.W != nil {
+		m["w"] = v.W
+	}
+	if v.H != nil {
+		m["h"] = v.H
+	}
+	if v.Crop != nil {
+		m["crop"] = v.Crop
+	}
+	if v.Z != nil {
+		m["z"] = v.Z
+	}
+	if v.Opacity != nil {
+		m["opacity"] = v.Opacity
+	}
+	if v.Visible != nil {
+		m["visible"] = v.Visible
+	}
+	if v.GainDb != nil {
+		m["gainDb"] = v.GainDb
+	}
+	if v.Muted != nil {
+		m["muted"] = v.Muted
+	}
+	if v.Text != "" {
+		m["text"] = v.Text
+	}
+	if v.Graphic != "" {
+		m["graphic"] = v.Graphic
+	}
+	if v.Variables != nil {
+		m["variables"] = v.Variables
+	}
+	if v.Channel != "" {
+		m["channel"] = v.Channel
+	}
+	if v.On != nil {
+		m["on"] = v.On
+	}
+	if v.Slate != "" {
+		m["slate"] = v.Slate
+	}
+	if v.Destination != "" {
+		m["destination"] = v.Destination
+	}
+	if v.From != "" {
+		m["from"] = v.From
+	}
+	if v.To != "" {
+		m["to"] = v.To
+	}
+	if v.Name != "" {
+		m["name"] = v.Name
+	}
+	if v.StorageLink != "" {
+		m["storageLink"] = v.StorageLink
+	}
+	if v.Prefix != "" {
+		m["prefix"] = v.Prefix
+	}
+	if v.Playlist != "" {
+		m["playlist"] = v.Playlist
+	}
+	if v.Item != nil {
+		m["item"] = v.Item
+	}
+	if v.Input != "" {
+		m["input"] = v.Input
+	}
+	if v.Role != "" {
+		m["role"] = v.Role
+	}
+	return json.Marshal(m)
+}
+
+// PostManagedStreamControlOpInputDisconnectInput is an object of the Managed API (first seen in postManagedStreamControl body.ops.op).
+type PostManagedStreamControlOpInputDisconnectInput struct {
+	Op    string `json:"op"` // Always "input.disconnect".
+	Input string `json:"input"`
+	Role  string `json:"role,omitempty"` // One of "primary", "backup".
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v PostManagedStreamControlOpInputDisconnectInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["op"] = v.Op
+	m["input"] = v.Input
+	if v.Role != "" {
+		m["role"] = v.Role
+	}
+	return json.Marshal(m)
+}
+
+// PostManagedStreamControlResponse is an object of the Managed API (first seen in postManagedStreamControl response).
+type PostManagedStreamControlResponse struct {
+	ID      string                           `json:"id"`
+	Results []PostManagedStreamControlResult `json:"results"`
+}
+
+// PostManagedStreamControlResult merges the variants PostManagedStreamControlResultVariant1, PostManagedStreamControlResultVariant2; fields of other variants are empty.
+type PostManagedStreamControlResult struct {
+	Ok    bool                                         `json:"ok"`
+	Clip  string                                       `json:"clip,omitempty"`
+	Error *PostManagedStreamControlResultVariant2Error `json:"error,omitempty"`
+}
+
+// PostManagedStreamControlResultVariant1 is an object of the Managed API (first seen in postManagedStreamControl response.results.result).
+type PostManagedStreamControlResultVariant1 struct {
+	Ok   bool   `json:"ok"` // Always true.
+	Clip string `json:"clip,omitempty"`
+}
+
+// PostManagedStreamControlResultVariant2 is an object of the Managed API (first seen in postManagedStreamControl response.results.result).
+type PostManagedStreamControlResultVariant2 struct {
+	Ok    bool                                        `json:"ok"` // Always false.
+	Error PostManagedStreamControlResultVariant2Error `json:"error"`
+}
+
+// PostManagedStreamControlResultVariant2Error is an object of the Managed API (first seen in postManagedStreamControl response.results.result.error).
+type PostManagedStreamControlResultVariant2Error struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// PreviewManagedStreamScheduleBody is an object of the Managed API (first seen in previewManagedStreamSchedule body).
+type PreviewManagedStreamScheduleBody struct {
+	Timezone        string  `json:"timezone"`
+	Start           string  `json:"start"`
+	Rrule           *string `json:"rrule,omitempty"`
+	DurationMinutes float64 `json:"durationMinutes"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v PreviewManagedStreamScheduleBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["timezone"] = v.Timezone
+	m["start"] = v.Start
+	if v.Rrule != nil {
+		m["rrule"] = v.Rrule
+	}
+	m["durationMinutes"] = v.DurationMinutes
+	return json.Marshal(m)
+}
+
+// PreviewManagedStreamScheduleResponse is an object of the Managed API (first seen in previewManagedStreamSchedule response).
+type PreviewManagedStreamScheduleResponse struct {
+	Starts []string                                `json:"starts"`
+	Errors []CreateManagedStreamChannelSyncWarning `json:"errors,omitempty"`
+}
+
+// RevealManagedStreamInputKeysResponse is an object of the Managed API (first seen in revealManagedStreamInputKeys response).
+type RevealManagedStreamInputKeysResponse struct {
+	Primary       string `json:"primary,omitempty"`
+	Backup        string `json:"backup,omitempty"`
+	SrtPassphrase string `json:"srtPassphrase,omitempty"`
+	PullURL       string `json:"pullUrl,omitempty"`
+}
+
+// RotateManagedStreamInputKeyBody is an object of the Managed API (first seen in rotateManagedStreamInputKey body).
+type RotateManagedStreamInputKeyBody struct {
+	Role   string `json:"role"` // One of "primary", "backup".
+	Remove *bool  `json:"remove,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v RotateManagedStreamInputKeyBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 2)
+	m["role"] = v.Role
+	if v.Remove != nil {
+		m["remove"] = v.Remove
+	}
+	return json.Marshal(m)
+}
+
+// RotateManagedStreamInputKeyResponse is an object of the Managed API (first seen in rotateManagedStreamInputKey response).
+type RotateManagedStreamInputKeyResponse struct {
+	Key   *string                        `json:"key"`
+	Input ListManagedStreamInputsItem    `json:"input"`
+	Sync  CreateManagedStreamChannelSync `json:"sync"`
+}
+
+// RotateManagedStreamPlaybackKeyResponse is an object of the Managed API (first seen in rotateManagedStreamPlaybackKey response).
+type RotateManagedStreamPlaybackKeyResponse struct {
+	Key     CreateManagedStreamPlaybackKeyKey `json:"key"`
+	Secret  string                            `json:"secret"`
+	Sync    CreateManagedStreamChannelSync    `json:"sync"`
+	Retired CreateManagedStreamPlaybackKeyKey `json:"retired"`
+}
+
+// TestManagedStreamWebhookResponse is the data of POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/test (testManagedStreamWebhook).
+type TestManagedStreamWebhookResponse = PostManagedRealtimeWebhookTestResponse
+
 // UpdateManagedInstanceAlertsBody is an object of the Managed API (first seen in updateManagedInstanceAlerts body).
 type UpdateManagedInstanceAlertsBody struct {
 	StoragePercent     float64 `json:"storagePercent"`
@@ -2460,17 +5852,8 @@ type UpdateManagedInstanceAllowlistResponse struct {
 	Entries     float64 `json:"entries"`
 }
 
-// UpdateManagedInstanceBody is an object of the Managed API (first seen in updateManagedInstance body).
-type UpdateManagedInstanceBody struct {
-	Name string `json:"name"`
-}
-
-// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
-func (v UpdateManagedInstanceBody) MarshalJSON() ([]byte, error) {
-	m := make(map[string]any, 1)
-	m["name"] = v.Name
-	return json.Marshal(m)
-}
+// UpdateManagedInstanceBody is the request body of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/update (updateManagedInstance).
+type UpdateManagedInstanceBody = CreateManagedStreamPlaybackKeyBody
 
 // UpdateManagedInstanceDeletionProtectionBody is an object of the Managed API (first seen in updateManagedInstanceDeletionProtection body).
 type UpdateManagedInstanceDeletionProtectionBody struct {
@@ -2594,6 +5977,447 @@ func (v UpdateManagedRealtimeWebhookBody) MarshalJSON() ([]byte, error) {
 // UpdateManagedRealtimeWebhookResponse is the data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/:webhookId/update (updateManagedRealtimeWebhook).
 type UpdateManagedRealtimeWebhookResponse = CreateManagedRealtimeWebhookResponse
 
+// UpdateManagedStreamChannelBody is an object of the Managed API (first seen in updateManagedStreamChannel body).
+type UpdateManagedStreamChannelBody struct {
+	Source     *CreateManagedStreamChannelSourceInput    `json:"source,omitempty"`
+	Access     *CreateManagedStreamChannelAccessInput    `json:"access,omitempty"`
+	Backup     *CreateManagedStreamChannelBackupInput    `json:"backup,omitempty"`
+	Recording  *CreateManagedStreamChannelRecordingInput `json:"recording,omitempty"`
+	Playback   *CreateManagedStreamChannelPlaybackInput  `json:"playback,omitempty"`
+	Failover   *CreateManagedStreamChannelFailoverInput  `json:"failover,omitempty"`
+	Encoding   *CreateManagedStreamChannelEncodingInput  `json:"encoding,omitempty"`
+	Latency    string                                    `json:"latency,omitempty"` // One of "low", "standard", "ultra".
+	DvrMinutes *float64                                  `json:"dvrMinutes,omitempty"`
+	MaxViewers *float64                                  `json:"maxViewers,omitempty"`
+	Name       string                                    `json:"name,omitempty"`
+	Enabled    *bool                                     `json:"enabled,omitempty"`
+	Position   *float64                                  `json:"position,omitempty"`
+	Revision   float64                                   `json:"revision"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamChannelBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 14)
+	if v.Source != nil {
+		m["source"] = v.Source
+	}
+	if v.Access != nil {
+		m["access"] = v.Access
+	}
+	if v.Backup != nil {
+		m["backup"] = v.Backup
+	}
+	if v.Recording != nil {
+		m["recording"] = v.Recording
+	}
+	if v.Playback != nil {
+		m["playback"] = v.Playback
+	}
+	if v.Failover != nil {
+		m["failover"] = v.Failover
+	}
+	if v.Encoding != nil {
+		m["encoding"] = v.Encoding
+	}
+	if v.Latency != "" {
+		m["latency"] = v.Latency
+	}
+	if v.DvrMinutes != nil {
+		m["dvrMinutes"] = v.DvrMinutes
+	}
+	if v.MaxViewers != nil {
+		m["maxViewers"] = v.MaxViewers
+	}
+	if v.Name != "" {
+		m["name"] = v.Name
+	}
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	if v.Position != nil {
+		m["position"] = v.Position
+	}
+	m["revision"] = v.Revision
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamChannelResponse is the data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/update (updateManagedStreamChannel).
+type UpdateManagedStreamChannelResponse = CreateManagedStreamChannelResponse
+
+// UpdateManagedStreamDestinationBody is an object of the Managed API (first seen in updateManagedStreamDestination body).
+type UpdateManagedStreamDestinationBody struct {
+	Source        *CreateManagedStreamDestinationSourceInput `json:"source,omitempty"`
+	Protocol      string                                     `json:"protocol,omitempty"` // One of "rtmp", "rtmps", "srt".
+	URL           string                                     `json:"url,omitempty"`
+	Rendition     string                                     `json:"rendition,omitempty"`
+	AutoStart     *bool                                      `json:"autoStart,omitempty"`
+	Name          string                                     `json:"name,omitempty"`
+	Enabled       *bool                                      `json:"enabled,omitempty"`
+	StreamKey     string                                     `json:"streamKey,omitempty"`
+	SrtPassphrase *string                                    `json:"srtPassphrase,omitempty"`
+	Revision      float64                                    `json:"revision"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamDestinationBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 10)
+	if v.Source != nil {
+		m["source"] = v.Source
+	}
+	if v.Protocol != "" {
+		m["protocol"] = v.Protocol
+	}
+	if v.URL != "" {
+		m["url"] = v.URL
+	}
+	if v.Rendition != "" {
+		m["rendition"] = v.Rendition
+	}
+	if v.AutoStart != nil {
+		m["autoStart"] = v.AutoStart
+	}
+	if v.Name != "" {
+		m["name"] = v.Name
+	}
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	if v.StreamKey != "" {
+		m["streamKey"] = v.StreamKey
+	}
+	if v.SrtPassphrase != nil {
+		m["srtPassphrase"] = v.SrtPassphrase
+	}
+	m["revision"] = v.Revision
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamDestinationResponse is the data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/update (updateManagedStreamDestination).
+type UpdateManagedStreamDestinationResponse = CreateManagedStreamDestinationResponse
+
+// UpdateManagedStreamGraphicBody is an object of the Managed API (first seen in updateManagedStreamGraphic body).
+type UpdateManagedStreamGraphicBody struct {
+	Revision  float64           `json:"revision"`
+	Name      string            `json:"name,omitempty"`
+	Variables map[string]string `json:"variables,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamGraphicBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	m["revision"] = v.Revision
+	if v.Name != "" {
+		m["name"] = v.Name
+	}
+	if v.Variables != nil {
+		m["variables"] = v.Variables
+	}
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamGraphicResponse is an object of the Managed API (first seen in updateManagedStreamGraphic response).
+type UpdateManagedStreamGraphicResponse struct {
+	Graphic ListManagedStreamGraphicsItem  `json:"graphic"`
+	Sync    CreateManagedStreamChannelSync `json:"sync"`
+}
+
+// UpdateManagedStreamInputBody is an object of the Managed API (first seen in updateManagedStreamInput body).
+type UpdateManagedStreamInputBody struct {
+	Name           string                             `json:"name,omitempty"`
+	Enabled        *bool                              `json:"enabled,omitempty"`
+	Protocols      []string                           `json:"protocols,omitempty"`
+	SrtPassphrase  *string                            `json:"srtPassphrase,omitempty"`
+	Pull           *UpdateManagedStreamInputPullInput `json:"pull,omitempty"`
+	MaxBitrateKbps *float64                           `json:"maxBitrateKbps,omitempty"`
+	AllowedCidrs   []string                           `json:"allowedCidrs,omitempty"`
+	Revision       float64                            `json:"revision"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamInputBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 8)
+	if v.Name != "" {
+		m["name"] = v.Name
+	}
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	if v.Protocols != nil {
+		m["protocols"] = v.Protocols
+	}
+	if v.SrtPassphrase != nil {
+		m["srtPassphrase"] = v.SrtPassphrase
+	}
+	if v.Pull != nil {
+		m["pull"] = v.Pull
+	}
+	if v.MaxBitrateKbps != nil {
+		m["maxBitrateKbps"] = v.MaxBitrateKbps
+	}
+	if v.AllowedCidrs != nil {
+		m["allowedCidrs"] = v.AllowedCidrs
+	}
+	m["revision"] = v.Revision
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamInputPullInput is an object of the Managed API (first seen in updateManagedStreamInput body.pull).
+type UpdateManagedStreamInputPullInput struct {
+	URL       string `json:"url,omitempty"`
+	Transport string `json:"transport,omitempty"` // One of "auto", "tcp", "udp".
+	Reconnect *bool  `json:"reconnect,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamInputPullInput) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 3)
+	if v.URL != "" {
+		m["url"] = v.URL
+	}
+	if v.Transport != "" {
+		m["transport"] = v.Transport
+	}
+	if v.Reconnect != nil {
+		m["reconnect"] = v.Reconnect
+	}
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamInputResponse is an object of the Managed API (first seen in updateManagedStreamInput response).
+type UpdateManagedStreamInputResponse struct {
+	Input CreateManagedStreamInputInput  `json:"input"`
+	Sync  CreateManagedStreamChannelSync `json:"sync"`
+}
+
+// UpdateManagedStreamMixerBody is an object of the Managed API (first seen in updateManagedStreamMixer body).
+type UpdateManagedStreamMixerBody struct {
+	Output       *CreateManagedStreamMixerOutputInput     `json:"output,omitempty"`
+	Canvas       *CreateManagedStreamMixerCanvasInput     `json:"canvas,omitempty"`
+	Sources      []CreateManagedStreamMixerSourceInput    `json:"sources,omitempty"`
+	Scenes       []CreateManagedStreamMixerSceneInput     `json:"scenes,omitempty"`
+	DefaultScene string                                   `json:"defaultScene,omitempty"`
+	Transition   *CreateManagedStreamMixerTransitionInput `json:"transition,omitempty"`
+	Name         string                                   `json:"name,omitempty"`
+	Enabled      *bool                                    `json:"enabled,omitempty"`
+	Revision     float64                                  `json:"revision"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamMixerBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 9)
+	if v.Output != nil {
+		m["output"] = v.Output
+	}
+	if v.Canvas != nil {
+		m["canvas"] = v.Canvas
+	}
+	if v.Sources != nil {
+		m["sources"] = v.Sources
+	}
+	if v.Scenes != nil {
+		m["scenes"] = v.Scenes
+	}
+	if v.DefaultScene != "" {
+		m["defaultScene"] = v.DefaultScene
+	}
+	if v.Transition != nil {
+		m["transition"] = v.Transition
+	}
+	if v.Name != "" {
+		m["name"] = v.Name
+	}
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	m["revision"] = v.Revision
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamMixerResponse is the data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/update (updateManagedStreamMixer).
+type UpdateManagedStreamMixerResponse = CreateManagedStreamMixerResponse
+
+// UpdateManagedStreamPlaylistBody is an object of the Managed API (first seen in updateManagedStreamPlaylist body).
+type UpdateManagedStreamPlaylistBody struct {
+	Revision float64                                `json:"revision"`
+	Name     string                                 `json:"name,omitempty"`
+	Loop     *bool                                  `json:"loop,omitempty"`
+	Shuffle  *bool                                  `json:"shuffle,omitempty"`
+	Encoding string                                 `json:"encoding,omitempty"` // One of "auto", "reencode".
+	Items    []CreateManagedStreamPlaylistItemInput `json:"items,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamPlaylistBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 6)
+	m["revision"] = v.Revision
+	if v.Name != "" {
+		m["name"] = v.Name
+	}
+	if v.Loop != nil {
+		m["loop"] = v.Loop
+	}
+	if v.Shuffle != nil {
+		m["shuffle"] = v.Shuffle
+	}
+	if v.Encoding != "" {
+		m["encoding"] = v.Encoding
+	}
+	if v.Items != nil {
+		m["items"] = v.Items
+	}
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamPlaylistResponse is the data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/update (updateManagedStreamPlaylist).
+type UpdateManagedStreamPlaylistResponse = CreateManagedStreamPlaylistResponse
+
+// UpdateManagedStreamScheduleBody is an object of the Managed API (first seen in updateManagedStreamSchedule body).
+type UpdateManagedStreamScheduleBody struct {
+	Revision        float64                                       `json:"revision"`
+	Name            string                                        `json:"name,omitempty"`
+	Enabled         *bool                                         `json:"enabled,omitempty"`
+	Timezone        string                                        `json:"timezone,omitempty"`
+	Start           string                                        `json:"start,omitempty"`
+	Rrule           *string                                       `json:"rrule,omitempty"`
+	DurationMinutes *float64                                      `json:"durationMinutes,omitempty"`
+	OnStart         []CreateManagedStreamScheduleOnStartItemInput `json:"onStart,omitempty"`
+	OnEnd           []CreateManagedStreamScheduleOnStartItemInput `json:"onEnd,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamScheduleBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 9)
+	m["revision"] = v.Revision
+	if v.Name != "" {
+		m["name"] = v.Name
+	}
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	if v.Timezone != "" {
+		m["timezone"] = v.Timezone
+	}
+	if v.Start != "" {
+		m["start"] = v.Start
+	}
+	if v.Rrule != nil {
+		m["rrule"] = v.Rrule
+	}
+	if v.DurationMinutes != nil {
+		m["durationMinutes"] = v.DurationMinutes
+	}
+	if v.OnStart != nil {
+		m["onStart"] = v.OnStart
+	}
+	if v.OnEnd != nil {
+		m["onEnd"] = v.OnEnd
+	}
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamScheduleResponse is the data of PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/update (updateManagedStreamSchedule).
+type UpdateManagedStreamScheduleResponse = CreateManagedStreamScheduleResponse
+
+// UpdateManagedStreamSettingsBody is an object of the Managed API (first seen in updateManagedStreamSettings body).
+type UpdateManagedStreamSettingsBody struct {
+	Timezone       string   `json:"timezone,omitempty"`
+	OfflineSlate   *string  `json:"offlineSlate,omitempty"`
+	AllowedOrigins []string `json:"allowedOrigins,omitempty"`
+	WebrtcSessions *float64 `json:"webrtcSessions,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamSettingsBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	if v.Timezone != "" {
+		m["timezone"] = v.Timezone
+	}
+	if v.OfflineSlate != nil {
+		m["offlineSlate"] = v.OfflineSlate
+	}
+	if v.AllowedOrigins != nil {
+		m["allowedOrigins"] = v.AllowedOrigins
+	}
+	if v.WebrtcSessions != nil {
+		m["webrtcSessions"] = v.WebrtcSessions
+	}
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamSettingsResponse is an object of the Managed API (first seen in updateManagedStreamSettings response).
+type UpdateManagedStreamSettingsResponse struct {
+	Server GetManagedStreamServerResponse `json:"server"`
+	Sync   CreateManagedStreamChannelSync `json:"sync"`
+	Tenant string                         `json:"tenant"` // One of "pending", "applied", "unchanged".
+}
+
+// UpdateManagedStreamWebhookBody is an object of the Managed API (first seen in updateManagedStreamWebhook body).
+type UpdateManagedStreamWebhookBody struct {
+	Revision float64  `json:"revision"`
+	URL      string   `json:"url,omitempty"`
+	Events   []string `json:"events,omitempty"`
+	Enabled  *bool    `json:"enabled,omitempty"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UpdateManagedStreamWebhookBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["revision"] = v.Revision
+	if v.URL != "" {
+		m["url"] = v.URL
+	}
+	if v.Events != nil {
+		m["events"] = v.Events
+	}
+	if v.Enabled != nil {
+		m["enabled"] = v.Enabled
+	}
+	return json.Marshal(m)
+}
+
+// UpdateManagedStreamWebhookResponse is an object of the Managed API (first seen in updateManagedStreamWebhook response).
+type UpdateManagedStreamWebhookResponse struct {
+	Webhook CreateManagedStreamWebhookWebhook `json:"webhook"`
+	Sync    CreateManagedStreamChannelSync    `json:"sync"`
+}
+
+// UploadManagedStreamGraphicBody is an object of the Managed API (first seen in uploadManagedStreamGraphic body).
+type UploadManagedStreamGraphicBody struct {
+	Name        string `json:"name"`
+	Kind        string `json:"kind"` // One of "image", "svg", "html", "font".
+	ContentType string `json:"contentType"`
+	DataBase64  string `json:"dataBase64"`
+}
+
+// MarshalJSON omits unset optional fields and keeps empty, non-nil slices and maps.
+func (v UploadManagedStreamGraphicBody) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any, 4)
+	m["name"] = v.Name
+	m["kind"] = v.Kind
+	m["contentType"] = v.ContentType
+	m["dataBase64"] = v.DataBase64
+	return json.Marshal(m)
+}
+
+// UploadManagedStreamGraphicResponse is the data of POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/upload (uploadManagedStreamGraphic).
+type UploadManagedStreamGraphicResponse = UpdateManagedStreamGraphicResponse
+
+// VerifyManagedStreamDomainResponse is an object of the Managed API (first seen in verifyManagedStreamDomain response).
+type VerifyManagedStreamDomainResponse struct {
+	Domain   CreateManagedStreamDomainDomain `json:"domain"`
+	Verified bool                            `json:"verified"`
+	Error    *string                         `json:"error"`
+	Sync     *VerifyManagedStreamDomainSync  `json:"sync"`
+}
+
+// VerifyManagedStreamDomainSync is an object of the Managed API (first seen in verifyManagedStreamDomain response.sync).
+type VerifyManagedStreamDomainSync struct {
+	Status     string                                  `json:"status"` // One of "pending", "applied".
+	Generation float64                                 `json:"generation"`
+	Error      *string                                 `json:"error"`
+	Warnings   []CreateManagedStreamChannelSyncWarning `json:"warnings"`
+}
+
 // DeleteManagedInstanceQuery is the query of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/delete (deleteManagedInstance).
 // Optional numbers and booleans are pointers: nil leaves the parameter out.
 type DeleteManagedInstanceQuery struct {
@@ -2711,6 +6535,40 @@ func (q *DeleteManagedRealtimeBindingQuery) encode() string {
 	v := url.Values{}
 	if q.RemoveVariables != nil {
 		v.Set("removeVariables", formatManagedBool(*q.RemoveVariables))
+	}
+	return encodeManagedQuery(v)
+}
+
+// DeleteManagedStreamBindingQuery is the query of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/:bindingId/delete (deleteManagedStreamBinding).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type DeleteManagedStreamBindingQuery struct {
+	RemoveVariables *bool
+}
+
+func (q *DeleteManagedStreamBindingQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	if q.RemoveVariables != nil {
+		v.Set("removeVariables", formatManagedBool(*q.RemoveVariables))
+	}
+	return encodeManagedQuery(v)
+}
+
+// DeleteManagedStreamRecordingQuery is the query of DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings/:recordingId/delete (deleteManagedStreamRecording).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type DeleteManagedStreamRecordingQuery struct {
+	DeleteObject *bool
+}
+
+func (q *DeleteManagedStreamRecordingQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	if q.DeleteObject != nil {
+		v.Set("deleteObject", formatManagedBool(*q.DeleteObject))
 	}
 	return encodeManagedQuery(v)
 }
@@ -3152,6 +7010,180 @@ func (q *GetManagedRealtimeWebhookDeliveriesQuery) encode() string {
 	return encodeManagedQuery(v)
 }
 
+// GetManagedStreamStatsQuery is the query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/stats (getManagedStreamStats).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type GetManagedStreamStatsQuery struct {
+	From      string
+	To        string
+	ChannelID string
+}
+
+func (q *GetManagedStreamStatsQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	if q.From != "" {
+		v.Set("from", q.From)
+	}
+	if q.To != "" {
+		v.Set("to", q.To)
+	}
+	if q.ChannelID != "" {
+		v.Set("channelId", q.ChannelID)
+	}
+	return encodeManagedQuery(v)
+}
+
+// GetManagedStreamUsageQuery is the query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/usage (getManagedStreamUsage).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type GetManagedStreamUsageQuery struct {
+	Month string
+}
+
+func (q *GetManagedStreamUsageQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	if q.Month != "" {
+		v.Set("month", q.Month)
+	}
+	return encodeManagedQuery(v)
+}
+
+// GetStreamPriceEstimateQuery is the query of GET /api/v1/managed/streams/price (getStreamPriceEstimate).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type GetStreamPriceEstimateQuery struct {
+	SpeedMbps      float64 // Required.
+	ProcessingMbps *float64
+}
+
+func (q *GetStreamPriceEstimateQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	v.Set("speedMbps", formatManagedNumber(q.SpeedMbps))
+	if q.ProcessingMbps != nil {
+		v.Set("processingMbps", formatManagedNumber(*q.ProcessingMbps))
+	}
+	return encodeManagedQuery(v)
+}
+
+// ListManagedStreamEventsQuery is the query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/events (listManagedStreamEvents).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type ListManagedStreamEventsQuery struct {
+	After string
+	Limit *float64
+}
+
+func (q *ListManagedStreamEventsQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	if q.After != "" {
+		v.Set("after", q.After)
+	}
+	if q.Limit != nil {
+		v.Set("limit", formatManagedNumber(*q.Limit))
+	}
+	return encodeManagedQuery(v)
+}
+
+// ListManagedStreamRecordingsQuery is the query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings (listManagedStreamRecordings).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type ListManagedStreamRecordingsQuery struct {
+	Kind      string // One of "recording", "clip".
+	ChannelID string
+	Cursor    string
+	Limit     *float64
+}
+
+func (q *ListManagedStreamRecordingsQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	if q.Kind != "" {
+		v.Set("kind", q.Kind)
+	}
+	if q.ChannelID != "" {
+		v.Set("channelId", q.ChannelID)
+	}
+	if q.Cursor != "" {
+		v.Set("cursor", q.Cursor)
+	}
+	if q.Limit != nil {
+		v.Set("limit", formatManagedNumber(*q.Limit))
+	}
+	return encodeManagedQuery(v)
+}
+
+// ListManagedStreamScheduleRunsQuery is the query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/runs (listManagedStreamScheduleRuns).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type ListManagedStreamScheduleRunsQuery struct {
+	Before string
+	Limit  *float64
+}
+
+func (q *ListManagedStreamScheduleRunsQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	if q.Before != "" {
+		v.Set("before", q.Before)
+	}
+	if q.Limit != nil {
+		v.Set("limit", formatManagedNumber(*q.Limit))
+	}
+	return encodeManagedQuery(v)
+}
+
+// ListManagedStreamStorageAssetsQuery is the query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/:linkId/assets (listManagedStreamStorageAssets).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type ListManagedStreamStorageAssetsQuery struct {
+	Search   string
+	HlsReady *bool
+}
+
+func (q *ListManagedStreamStorageAssetsQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	if q.Search != "" {
+		v.Set("search", q.Search)
+	}
+	if q.HlsReady != nil {
+		v.Set("hlsReady", formatManagedBool(*q.HlsReady))
+	}
+	return encodeManagedQuery(v)
+}
+
+// ListManagedStreamWebhookDeliveriesQuery is the query of GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/deliveries (listManagedStreamWebhookDeliveries).
+// Optional numbers and booleans are pointers: nil leaves the parameter out.
+type ListManagedStreamWebhookDeliveriesQuery struct {
+	After string
+	Limit *float64
+}
+
+func (q *ListManagedStreamWebhookDeliveriesQuery) encode() string {
+	if q == nil {
+		return ""
+	}
+	v := url.Values{}
+	if q.After != "" {
+		v.Set("after", q.After)
+	}
+	if q.Limit != nil {
+		v.Set("limit", formatManagedNumber(*q.Limit))
+	}
+	return encodeManagedQuery(v)
+}
+
 // managedOperation describes one Managed Services operation (tests use the table).
 type managedOperation struct {
 	ID     string
@@ -3172,6 +7204,20 @@ var managedOperations = []managedOperation{
 	{ID: "createManagedRealtimeInspectorToken", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/inspector/token"},
 	{ID: "createManagedRealtimeKey", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/keys/create"},
 	{ID: "createManagedRealtimeWebhook", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/create"},
+	{ID: "createManagedStreamBinding", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/create"},
+	{ID: "createManagedStreamChannel", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/create"},
+	{ID: "createManagedStreamClip", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/clips/create"},
+	{ID: "createManagedStreamDestination", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/create"},
+	{ID: "createManagedStreamDomain", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/create"},
+	{ID: "createManagedStreamInput", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/create"},
+	{ID: "createManagedStreamMixer", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/create"},
+	{ID: "createManagedStreamPlaybackKey", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/create"},
+	{ID: "createManagedStreamPlaybackToken", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/token/create"},
+	{ID: "createManagedStreamPlaylist", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/create"},
+	{ID: "createManagedStreamSchedule", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/create"},
+	{ID: "createManagedStreamStorageLink", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/create"},
+	{ID: "createManagedStreamStudioToken", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/studio-token/create"},
+	{ID: "createManagedStreamWebhook", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/create"},
 	{ID: "deleteManagedInstance", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/delete"},
 	{ID: "deleteManagedInstanceBinding", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/bindings/:bindingId/delete"},
 	{ID: "deleteManagedInstanceDatabase", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/databases/:databaseName/delete"},
@@ -3181,6 +7227,19 @@ var managedOperations = []managedOperation{
 	{ID: "deleteManagedRealtimeApp", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/delete"},
 	{ID: "deleteManagedRealtimeBinding", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/bindings/:bindingId/delete"},
 	{ID: "deleteManagedRealtimeWebhook", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/:webhookId/delete"},
+	{ID: "deleteManagedStreamBinding", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/:bindingId/delete"},
+	{ID: "deleteManagedStreamChannel", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/delete"},
+	{ID: "deleteManagedStreamDestination", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/delete"},
+	{ID: "deleteManagedStreamDomain", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/:domainId/delete"},
+	{ID: "deleteManagedStreamGraphic", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/:graphicId/delete"},
+	{ID: "deleteManagedStreamInput", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/delete"},
+	{ID: "deleteManagedStreamMixer", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/delete"},
+	{ID: "deleteManagedStreamPlaybackKey", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/:keyId/delete"},
+	{ID: "deleteManagedStreamPlaylist", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/delete"},
+	{ID: "deleteManagedStreamRecording", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings/:recordingId/delete"},
+	{ID: "deleteManagedStreamSchedule", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/delete"},
+	{ID: "deleteManagedStreamStorageLink", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/:linkId/delete"},
+	{ID: "deleteManagedStreamWebhook", Method: "DELETE", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/delete"},
 	{ID: "getManagedCatalog", Method: "GET", Path: "/api/v1/managed/catalog"},
 	{ID: "getManagedClientIp", Method: "GET", Path: "/api/v1/managed/client-ip"},
 	{ID: "getManagedInstance", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId"},
@@ -3224,7 +7283,36 @@ var managedOperations = []managedOperation{
 	{ID: "getManagedRealtimeUsage", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/usage"},
 	{ID: "getManagedRealtimeWebhookDeliveries", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/deliveries"},
 	{ID: "getManagedRealtimeWebhooks", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks"},
+	{ID: "getManagedStreamChannel", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId"},
+	{ID: "getManagedStreamChannelPlayback", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/playback"},
+	{ID: "getManagedStreamDestination", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId"},
+	{ID: "getManagedStreamInput", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId"},
+	{ID: "getManagedStreamLive", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/live"},
+	{ID: "getManagedStreamMixer", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId"},
+	{ID: "getManagedStreamPlaylist", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId"},
+	{ID: "getManagedStreamSchedule", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId"},
+	{ID: "getManagedStreamServer", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream"},
+	{ID: "getManagedStreamStats", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/stats"},
+	{ID: "getManagedStreamUsage", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/usage"},
 	{ID: "getManagedWorkspace", Method: "GET", Path: "/api/v1/projects/:projectId/managed"},
+	{ID: "getStreamPriceEstimate", Method: "GET", Path: "/api/v1/managed/streams/price"},
+	{ID: "listManagedStreamBindings", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings"},
+	{ID: "listManagedStreamChannels", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels"},
+	{ID: "listManagedStreamDestinations", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations"},
+	{ID: "listManagedStreamDomains", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains"},
+	{ID: "listManagedStreamEvents", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/events"},
+	{ID: "listManagedStreamGraphics", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics"},
+	{ID: "listManagedStreamInputs", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs"},
+	{ID: "listManagedStreamMixers", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers"},
+	{ID: "listManagedStreamPlaybackKeys", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys"},
+	{ID: "listManagedStreamPlaylists", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists"},
+	{ID: "listManagedStreamRecordings", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings"},
+	{ID: "listManagedStreamScheduleRuns", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/runs"},
+	{ID: "listManagedStreamSchedules", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules"},
+	{ID: "listManagedStreamStorageAssets", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/:linkId/assets"},
+	{ID: "listManagedStreamStorageLinks", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links"},
+	{ID: "listManagedStreamWebhookDeliveries", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/deliveries"},
+	{ID: "listManagedStreamWebhooks", Method: "GET", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks"},
 	{ID: "postManagedInstanceConfigApply", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/config/apply"},
 	{ID: "postManagedInstanceConfigRevert", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/config/revert"},
 	{ID: "postManagedInstanceConfigValidate", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/config/validate"},
@@ -3256,6 +7344,12 @@ var managedOperations = []managedOperation{
 	{ID: "postManagedRealtimeUserTerminate", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/users/terminate"},
 	{ID: "postManagedRealtimeWebhookRedeliver", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/deliveries/:deliveryId/redeliver"},
 	{ID: "postManagedRealtimeWebhookTest", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/:webhookId/test"},
+	{ID: "postManagedStreamControl", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/control"},
+	{ID: "previewManagedStreamSchedule", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/preview"},
+	{ID: "revealManagedStreamInputKeys", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/keys/reveal"},
+	{ID: "rotateManagedStreamInputKey", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/keys/rotate"},
+	{ID: "rotateManagedStreamPlaybackKey", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/:keyId/rotate"},
+	{ID: "testManagedStreamWebhook", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/test"},
 	{ID: "updateManagedInstance", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/update"},
 	{ID: "updateManagedInstanceAlerts", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/alerts/update"},
 	{ID: "updateManagedInstanceAllowlist", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/network/allowlist/update"},
@@ -3265,6 +7359,17 @@ var managedOperations = []managedOperation{
 	{ID: "updateManagedRealtimeApp", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/update"},
 	{ID: "updateManagedRealtimeAppSettings", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/settings/update"},
 	{ID: "updateManagedRealtimeWebhook", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/realtime/apps/:appId/webhooks/:webhookId/update"},
+	{ID: "updateManagedStreamChannel", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/update"},
+	{ID: "updateManagedStreamDestination", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/update"},
+	{ID: "updateManagedStreamGraphic", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/:graphicId/update"},
+	{ID: "updateManagedStreamInput", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/update"},
+	{ID: "updateManagedStreamMixer", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/update"},
+	{ID: "updateManagedStreamPlaylist", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/update"},
+	{ID: "updateManagedStreamSchedule", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/update"},
+	{ID: "updateManagedStreamSettings", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/settings/update"},
+	{ID: "updateManagedStreamWebhook", Method: "PUT", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/update"},
+	{ID: "uploadManagedStreamGraphic", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/upload"},
+	{ID: "verifyManagedStreamDomain", Method: "POST", Path: "/api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/:domainId/verify"},
 }
 
 // createManagedInstance calls POST /api/v1/projects/:projectId/managed/instances/create.
@@ -3333,6 +7438,90 @@ func createManagedRealtimeWebhook(ctx context.Context, c *Client, projectID stri
 	return Request[CreateManagedRealtimeWebhookResponse](ctx, c, "POST", path, body)
 }
 
+// createManagedStreamBinding calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/create.
+func createManagedStreamBinding(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamBindingBody) (*Response[CreateManagedStreamBindingResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/bindings/create", projectID, instanceID)
+	return Request[CreateManagedStreamBindingResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamChannel calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/create.
+func createManagedStreamChannel(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamChannelBody) (*Response[CreateManagedStreamChannelResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/channels/create", projectID, instanceID)
+	return Request[CreateManagedStreamChannelResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamClip calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/clips/create.
+func createManagedStreamClip(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamClipBody) (*Response[CreateManagedStreamClipResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/clips/create", projectID, instanceID)
+	return Request[CreateManagedStreamClipResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamDestination calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/create.
+func createManagedStreamDestination(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamDestinationBody) (*Response[CreateManagedStreamDestinationResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/destinations/create", projectID, instanceID)
+	return Request[CreateManagedStreamDestinationResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamDomain calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/create.
+func createManagedStreamDomain(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamDomainBody) (*Response[CreateManagedStreamDomainResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/domains/create", projectID, instanceID)
+	return Request[CreateManagedStreamDomainResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamInput calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/create.
+func createManagedStreamInput(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamInputBody) (*Response[CreateManagedStreamInputResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/inputs/create", projectID, instanceID)
+	return Request[CreateManagedStreamInputResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamMixer calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/create.
+func createManagedStreamMixer(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamMixerBody) (*Response[CreateManagedStreamMixerResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/mixers/create", projectID, instanceID)
+	return Request[CreateManagedStreamMixerResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamPlaybackKey calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/create.
+func createManagedStreamPlaybackKey(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamPlaybackKeyBody) (*Response[CreateManagedStreamPlaybackKeyResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/playback-keys/create", projectID, instanceID)
+	return Request[CreateManagedStreamPlaybackKeyResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamPlaybackToken calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/token/create.
+func createManagedStreamPlaybackToken(ctx context.Context, c *Client, projectID string, instanceID string, channelID string, body CreateManagedStreamPlaybackTokenBody) (*Response[CreateManagedStreamPlaybackTokenResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/channels/%s/token/create", projectID, instanceID, channelID)
+	return Request[CreateManagedStreamPlaybackTokenResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamPlaylist calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/create.
+func createManagedStreamPlaylist(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamPlaylistBody) (*Response[CreateManagedStreamPlaylistResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/playlists/create", projectID, instanceID)
+	return Request[CreateManagedStreamPlaylistResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamSchedule calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/create.
+func createManagedStreamSchedule(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamScheduleBody) (*Response[CreateManagedStreamScheduleResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/schedules/create", projectID, instanceID)
+	return Request[CreateManagedStreamScheduleResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamStorageLink calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/create.
+func createManagedStreamStorageLink(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamStorageLinkBody) (*Response[CreateManagedStreamStorageLinkResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/storage-links/create", projectID, instanceID)
+	return Request[CreateManagedStreamStorageLinkResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamStudioToken calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/studio-token/create.
+func createManagedStreamStudioToken(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamStudioTokenBody) (*Response[CreateManagedStreamStudioTokenResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/studio-token/create", projectID, instanceID)
+	return Request[CreateManagedStreamStudioTokenResponse](ctx, c, "POST", path, body)
+}
+
+// createManagedStreamWebhook calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/create.
+func createManagedStreamWebhook(ctx context.Context, c *Client, projectID string, instanceID string, body CreateManagedStreamWebhookBody) (*Response[CreateManagedStreamWebhookResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/webhooks/create", projectID, instanceID)
+	return Request[CreateManagedStreamWebhookResponse](ctx, c, "POST", path, body)
+}
+
 // deleteManagedInstance calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/delete.
 func deleteManagedInstance(ctx context.Context, c *Client, projectID string, instanceID string, query DeleteManagedInstanceQuery) (*Response[DeleteManagedInstanceResponse], error) {
 	path := managedPath("/api/v1/projects/%s/managed/instances/%s/delete", projectID, instanceID)
@@ -3392,6 +7581,86 @@ func deleteManagedRealtimeBinding(ctx context.Context, c *Client, projectID stri
 func deleteManagedRealtimeWebhook(ctx context.Context, c *Client, projectID string, instanceID string, appID string, webhookID string) (*Response[DeleteManagedRealtimeWebhookResponse], error) {
 	path := managedPath("/api/v1/projects/%s/managed/instances/%s/realtime/apps/%s/webhooks/%s/delete", projectID, instanceID, appID, webhookID)
 	return Request[DeleteManagedRealtimeWebhookResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamBinding calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings/:bindingId/delete.
+func deleteManagedStreamBinding(ctx context.Context, c *Client, projectID string, instanceID string, bindingID string, query *DeleteManagedStreamBindingQuery) (*Response[DeleteManagedStreamBindingResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/bindings/%s/delete", projectID, instanceID, bindingID)
+	path += query.encode()
+	return Request[DeleteManagedStreamBindingResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamChannel calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/delete.
+func deleteManagedStreamChannel(ctx context.Context, c *Client, projectID string, instanceID string, channelID string) (*Response[DeleteManagedStreamChannelResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/channels/%s/delete", projectID, instanceID, channelID)
+	return Request[DeleteManagedStreamChannelResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamDestination calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/delete.
+func deleteManagedStreamDestination(ctx context.Context, c *Client, projectID string, instanceID string, destinationID string) (*Response[DeleteManagedStreamDestinationResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/destinations/%s/delete", projectID, instanceID, destinationID)
+	return Request[DeleteManagedStreamDestinationResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamDomain calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/:domainId/delete.
+func deleteManagedStreamDomain(ctx context.Context, c *Client, projectID string, instanceID string, domainID string) (*Response[DeleteManagedStreamDomainResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/domains/%s/delete", projectID, instanceID, domainID)
+	return Request[DeleteManagedStreamDomainResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamGraphic calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/:graphicId/delete.
+func deleteManagedStreamGraphic(ctx context.Context, c *Client, projectID string, instanceID string, graphicID string) (*Response[DeleteManagedStreamGraphicResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/graphics/%s/delete", projectID, instanceID, graphicID)
+	return Request[DeleteManagedStreamGraphicResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamInput calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/delete.
+func deleteManagedStreamInput(ctx context.Context, c *Client, projectID string, instanceID string, inputID string) (*Response[DeleteManagedStreamInputResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/inputs/%s/delete", projectID, instanceID, inputID)
+	return Request[DeleteManagedStreamInputResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamMixer calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/delete.
+func deleteManagedStreamMixer(ctx context.Context, c *Client, projectID string, instanceID string, mixerID string) (*Response[DeleteManagedStreamMixerResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/mixers/%s/delete", projectID, instanceID, mixerID)
+	return Request[DeleteManagedStreamMixerResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamPlaybackKey calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/:keyId/delete.
+func deleteManagedStreamPlaybackKey(ctx context.Context, c *Client, projectID string, instanceID string, keyID string) (*Response[DeleteManagedStreamPlaybackKeyResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/playback-keys/%s/delete", projectID, instanceID, keyID)
+	return Request[DeleteManagedStreamPlaybackKeyResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamPlaylist calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/delete.
+func deleteManagedStreamPlaylist(ctx context.Context, c *Client, projectID string, instanceID string, playlistID string) (*Response[DeleteManagedStreamPlaylistResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/playlists/%s/delete", projectID, instanceID, playlistID)
+	return Request[DeleteManagedStreamPlaylistResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamRecording calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings/:recordingId/delete.
+func deleteManagedStreamRecording(ctx context.Context, c *Client, projectID string, instanceID string, recordingID string, query *DeleteManagedStreamRecordingQuery) (*Response[DeleteManagedStreamRecordingResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/recordings/%s/delete", projectID, instanceID, recordingID)
+	path += query.encode()
+	return Request[DeleteManagedStreamRecordingResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamSchedule calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/delete.
+func deleteManagedStreamSchedule(ctx context.Context, c *Client, projectID string, instanceID string, scheduleID string) (*Response[DeleteManagedStreamScheduleResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/schedules/%s/delete", projectID, instanceID, scheduleID)
+	return Request[DeleteManagedStreamScheduleResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamStorageLink calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/:linkId/delete.
+func deleteManagedStreamStorageLink(ctx context.Context, c *Client, projectID string, instanceID string, linkID string) (*Response[DeleteManagedStreamStorageLinkResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/storage-links/%s/delete", projectID, instanceID, linkID)
+	return Request[DeleteManagedStreamStorageLinkResponse](ctx, c, "DELETE", path, nil)
+}
+
+// deleteManagedStreamWebhook calls DELETE /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/delete.
+func deleteManagedStreamWebhook(ctx context.Context, c *Client, projectID string, instanceID string, webhookID string) (*Response[DeleteManagedStreamWebhookResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/webhooks/%s/delete", projectID, instanceID, webhookID)
+	return Request[DeleteManagedStreamWebhookResponse](ctx, c, "DELETE", path, nil)
 }
 
 // getManagedCatalog calls GET /api/v1/managed/catalog.
@@ -3671,10 +7940,192 @@ func getManagedRealtimeWebhooks(ctx context.Context, c *Client, projectID string
 	return Request[GetManagedRealtimeWebhooksResponse](ctx, c, "GET", path, nil)
 }
 
+// getManagedStreamChannel calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId.
+func getManagedStreamChannel(ctx context.Context, c *Client, projectID string, instanceID string, channelID string) (*Response[GetManagedStreamChannelResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/channels/%s", projectID, instanceID, channelID)
+	return Request[GetManagedStreamChannelResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamChannelPlayback calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/playback.
+func getManagedStreamChannelPlayback(ctx context.Context, c *Client, projectID string, instanceID string, channelID string) (*Response[GetManagedStreamChannelPlaybackResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/channels/%s/playback", projectID, instanceID, channelID)
+	return Request[GetManagedStreamChannelPlaybackResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamDestination calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId.
+func getManagedStreamDestination(ctx context.Context, c *Client, projectID string, instanceID string, destinationID string) (*Response[GetManagedStreamDestinationResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/destinations/%s", projectID, instanceID, destinationID)
+	return Request[GetManagedStreamDestinationResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamInput calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId.
+func getManagedStreamInput(ctx context.Context, c *Client, projectID string, instanceID string, inputID string) (*Response[GetManagedStreamInputResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/inputs/%s", projectID, instanceID, inputID)
+	return Request[GetManagedStreamInputResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamLive calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/live.
+func getManagedStreamLive(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[GetManagedStreamLiveResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/live", projectID, instanceID)
+	return Request[GetManagedStreamLiveResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamMixer calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId.
+func getManagedStreamMixer(ctx context.Context, c *Client, projectID string, instanceID string, mixerID string) (*Response[GetManagedStreamMixerResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/mixers/%s", projectID, instanceID, mixerID)
+	return Request[GetManagedStreamMixerResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamPlaylist calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId.
+func getManagedStreamPlaylist(ctx context.Context, c *Client, projectID string, instanceID string, playlistID string) (*Response[GetManagedStreamPlaylistResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/playlists/%s", projectID, instanceID, playlistID)
+	return Request[GetManagedStreamPlaylistResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamSchedule calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId.
+func getManagedStreamSchedule(ctx context.Context, c *Client, projectID string, instanceID string, scheduleID string) (*Response[GetManagedStreamScheduleResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/schedules/%s", projectID, instanceID, scheduleID)
+	return Request[GetManagedStreamScheduleResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamServer calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream.
+func getManagedStreamServer(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[GetManagedStreamServerResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream", projectID, instanceID)
+	return Request[GetManagedStreamServerResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamStats calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/stats.
+func getManagedStreamStats(ctx context.Context, c *Client, projectID string, instanceID string, query *GetManagedStreamStatsQuery) (*Response[GetManagedStreamStatsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/stats", projectID, instanceID)
+	path += query.encode()
+	return Request[GetManagedStreamStatsResponse](ctx, c, "GET", path, nil)
+}
+
+// getManagedStreamUsage calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/usage.
+func getManagedStreamUsage(ctx context.Context, c *Client, projectID string, instanceID string, query *GetManagedStreamUsageQuery) (*Response[GetManagedStreamUsageResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/usage", projectID, instanceID)
+	path += query.encode()
+	return Request[GetManagedStreamUsageResponse](ctx, c, "GET", path, nil)
+}
+
 // getManagedWorkspace calls GET /api/v1/projects/:projectId/managed.
 func getManagedWorkspace(ctx context.Context, c *Client, projectID string) (*Response[GetManagedWorkspaceResponse], error) {
 	path := managedPath("/api/v1/projects/%s/managed", projectID)
 	return Request[GetManagedWorkspaceResponse](ctx, c, "GET", path, nil)
+}
+
+// getStreamPriceEstimate calls GET /api/v1/managed/streams/price.
+func getStreamPriceEstimate(ctx context.Context, c *Client, query GetStreamPriceEstimateQuery) (*Response[GetStreamPriceEstimateResponse], error) {
+	path := managedPath("/api/v1/managed/streams/price")
+	path += (&query).encode()
+	return Request[GetStreamPriceEstimateResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamBindings calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/bindings.
+func listManagedStreamBindings(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamBindingsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/bindings", projectID, instanceID)
+	return Request[ListManagedStreamBindingsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamChannels calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels.
+func listManagedStreamChannels(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamChannelsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/channels", projectID, instanceID)
+	return Request[ListManagedStreamChannelsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamDestinations calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations.
+func listManagedStreamDestinations(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamDestinationsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/destinations", projectID, instanceID)
+	return Request[ListManagedStreamDestinationsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamDomains calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains.
+func listManagedStreamDomains(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamDomainsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/domains", projectID, instanceID)
+	return Request[ListManagedStreamDomainsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamEvents calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/events.
+func listManagedStreamEvents(ctx context.Context, c *Client, projectID string, instanceID string, query *ListManagedStreamEventsQuery) (*Response[ListManagedStreamEventsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/events", projectID, instanceID)
+	path += query.encode()
+	return Request[ListManagedStreamEventsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamGraphics calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics.
+func listManagedStreamGraphics(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamGraphicsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/graphics", projectID, instanceID)
+	return Request[ListManagedStreamGraphicsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamInputs calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs.
+func listManagedStreamInputs(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamInputsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/inputs", projectID, instanceID)
+	return Request[ListManagedStreamInputsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamMixers calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers.
+func listManagedStreamMixers(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamMixersResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/mixers", projectID, instanceID)
+	return Request[ListManagedStreamMixersResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamPlaybackKeys calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys.
+func listManagedStreamPlaybackKeys(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamPlaybackKeysResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/playback-keys", projectID, instanceID)
+	return Request[ListManagedStreamPlaybackKeysResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamPlaylists calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists.
+func listManagedStreamPlaylists(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamPlaylistsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/playlists", projectID, instanceID)
+	return Request[ListManagedStreamPlaylistsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamRecordings calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/recordings.
+func listManagedStreamRecordings(ctx context.Context, c *Client, projectID string, instanceID string, query *ListManagedStreamRecordingsQuery) (*Response[ListManagedStreamRecordingsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/recordings", projectID, instanceID)
+	path += query.encode()
+	return Request[ListManagedStreamRecordingsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamScheduleRuns calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/runs.
+func listManagedStreamScheduleRuns(ctx context.Context, c *Client, projectID string, instanceID string, scheduleID string, query *ListManagedStreamScheduleRunsQuery) (*Response[ListManagedStreamScheduleRunsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/schedules/%s/runs", projectID, instanceID, scheduleID)
+	path += query.encode()
+	return Request[ListManagedStreamScheduleRunsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamSchedules calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules.
+func listManagedStreamSchedules(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamSchedulesResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/schedules", projectID, instanceID)
+	return Request[ListManagedStreamSchedulesResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamStorageAssets calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links/:linkId/assets.
+func listManagedStreamStorageAssets(ctx context.Context, c *Client, projectID string, instanceID string, linkID string, query *ListManagedStreamStorageAssetsQuery) (*Response[ListManagedStreamStorageAssetsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/storage-links/%s/assets", projectID, instanceID, linkID)
+	path += query.encode()
+	return Request[ListManagedStreamStorageAssetsResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamStorageLinks calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/storage-links.
+func listManagedStreamStorageLinks(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamStorageLinksResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/storage-links", projectID, instanceID)
+	return Request[ListManagedStreamStorageLinksResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamWebhookDeliveries calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/deliveries.
+func listManagedStreamWebhookDeliveries(ctx context.Context, c *Client, projectID string, instanceID string, webhookID string, query *ListManagedStreamWebhookDeliveriesQuery) (*Response[ListManagedStreamWebhookDeliveriesResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/webhooks/%s/deliveries", projectID, instanceID, webhookID)
+	path += query.encode()
+	return Request[ListManagedStreamWebhookDeliveriesResponse](ctx, c, "GET", path, nil)
+}
+
+// listManagedStreamWebhooks calls GET /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks.
+func listManagedStreamWebhooks(ctx context.Context, c *Client, projectID string, instanceID string) (*Response[ListManagedStreamWebhooksResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/webhooks", projectID, instanceID)
+	return Request[ListManagedStreamWebhooksResponse](ctx, c, "GET", path, nil)
 }
 
 // postManagedInstanceConfigApply calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/config/apply.
@@ -3863,6 +8314,42 @@ func postManagedRealtimeWebhookTest(ctx context.Context, c *Client, projectID st
 	return Request[PostManagedRealtimeWebhookTestResponse](ctx, c, "POST", path, struct{}{})
 }
 
+// postManagedStreamControl calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/control.
+func postManagedStreamControl(ctx context.Context, c *Client, projectID string, instanceID string, body PostManagedStreamControlBody) (*Response[PostManagedStreamControlResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/control", projectID, instanceID)
+	return Request[PostManagedStreamControlResponse](ctx, c, "POST", path, body)
+}
+
+// previewManagedStreamSchedule calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/preview.
+func previewManagedStreamSchedule(ctx context.Context, c *Client, projectID string, instanceID string, body PreviewManagedStreamScheduleBody) (*Response[PreviewManagedStreamScheduleResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/schedules/preview", projectID, instanceID)
+	return Request[PreviewManagedStreamScheduleResponse](ctx, c, "POST", path, body)
+}
+
+// revealManagedStreamInputKeys calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/keys/reveal.
+func revealManagedStreamInputKeys(ctx context.Context, c *Client, projectID string, instanceID string, inputID string) (*Response[RevealManagedStreamInputKeysResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/inputs/%s/keys/reveal", projectID, instanceID, inputID)
+	return Request[RevealManagedStreamInputKeysResponse](ctx, c, "POST", path, struct{}{})
+}
+
+// rotateManagedStreamInputKey calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/keys/rotate.
+func rotateManagedStreamInputKey(ctx context.Context, c *Client, projectID string, instanceID string, inputID string, body RotateManagedStreamInputKeyBody) (*Response[RotateManagedStreamInputKeyResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/inputs/%s/keys/rotate", projectID, instanceID, inputID)
+	return Request[RotateManagedStreamInputKeyResponse](ctx, c, "POST", path, body)
+}
+
+// rotateManagedStreamPlaybackKey calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playback-keys/:keyId/rotate.
+func rotateManagedStreamPlaybackKey(ctx context.Context, c *Client, projectID string, instanceID string, keyID string) (*Response[RotateManagedStreamPlaybackKeyResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/playback-keys/%s/rotate", projectID, instanceID, keyID)
+	return Request[RotateManagedStreamPlaybackKeyResponse](ctx, c, "POST", path, struct{}{})
+}
+
+// testManagedStreamWebhook calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/test.
+func testManagedStreamWebhook(ctx context.Context, c *Client, projectID string, instanceID string, webhookID string) (*Response[TestManagedStreamWebhookResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/webhooks/%s/test", projectID, instanceID, webhookID)
+	return Request[TestManagedStreamWebhookResponse](ctx, c, "POST", path, struct{}{})
+}
+
 // updateManagedInstance calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/update.
 func updateManagedInstance(ctx context.Context, c *Client, projectID string, instanceID string, body UpdateManagedInstanceBody) (*Response[UpdateManagedInstanceResponse], error) {
 	path := managedPath("/api/v1/projects/%s/managed/instances/%s/update", projectID, instanceID)
@@ -3915,4 +8402,70 @@ func updateManagedRealtimeAppSettings(ctx context.Context, c *Client, projectID 
 func updateManagedRealtimeWebhook(ctx context.Context, c *Client, projectID string, instanceID string, appID string, webhookID string, body UpdateManagedRealtimeWebhookBody) (*Response[UpdateManagedRealtimeWebhookResponse], error) {
 	path := managedPath("/api/v1/projects/%s/managed/instances/%s/realtime/apps/%s/webhooks/%s/update", projectID, instanceID, appID, webhookID)
 	return Request[UpdateManagedRealtimeWebhookResponse](ctx, c, "PUT", path, body)
+}
+
+// updateManagedStreamChannel calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/channels/:channelId/update.
+func updateManagedStreamChannel(ctx context.Context, c *Client, projectID string, instanceID string, channelID string, body UpdateManagedStreamChannelBody) (*Response[UpdateManagedStreamChannelResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/channels/%s/update", projectID, instanceID, channelID)
+	return Request[UpdateManagedStreamChannelResponse](ctx, c, "PUT", path, body)
+}
+
+// updateManagedStreamDestination calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/destinations/:destinationId/update.
+func updateManagedStreamDestination(ctx context.Context, c *Client, projectID string, instanceID string, destinationID string, body UpdateManagedStreamDestinationBody) (*Response[UpdateManagedStreamDestinationResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/destinations/%s/update", projectID, instanceID, destinationID)
+	return Request[UpdateManagedStreamDestinationResponse](ctx, c, "PUT", path, body)
+}
+
+// updateManagedStreamGraphic calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/:graphicId/update.
+func updateManagedStreamGraphic(ctx context.Context, c *Client, projectID string, instanceID string, graphicID string, body UpdateManagedStreamGraphicBody) (*Response[UpdateManagedStreamGraphicResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/graphics/%s/update", projectID, instanceID, graphicID)
+	return Request[UpdateManagedStreamGraphicResponse](ctx, c, "PUT", path, body)
+}
+
+// updateManagedStreamInput calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/inputs/:inputId/update.
+func updateManagedStreamInput(ctx context.Context, c *Client, projectID string, instanceID string, inputID string, body UpdateManagedStreamInputBody) (*Response[UpdateManagedStreamInputResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/inputs/%s/update", projectID, instanceID, inputID)
+	return Request[UpdateManagedStreamInputResponse](ctx, c, "PUT", path, body)
+}
+
+// updateManagedStreamMixer calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/mixers/:mixerId/update.
+func updateManagedStreamMixer(ctx context.Context, c *Client, projectID string, instanceID string, mixerID string, body UpdateManagedStreamMixerBody) (*Response[UpdateManagedStreamMixerResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/mixers/%s/update", projectID, instanceID, mixerID)
+	return Request[UpdateManagedStreamMixerResponse](ctx, c, "PUT", path, body)
+}
+
+// updateManagedStreamPlaylist calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/playlists/:playlistId/update.
+func updateManagedStreamPlaylist(ctx context.Context, c *Client, projectID string, instanceID string, playlistID string, body UpdateManagedStreamPlaylistBody) (*Response[UpdateManagedStreamPlaylistResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/playlists/%s/update", projectID, instanceID, playlistID)
+	return Request[UpdateManagedStreamPlaylistResponse](ctx, c, "PUT", path, body)
+}
+
+// updateManagedStreamSchedule calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/schedules/:scheduleId/update.
+func updateManagedStreamSchedule(ctx context.Context, c *Client, projectID string, instanceID string, scheduleID string, body UpdateManagedStreamScheduleBody) (*Response[UpdateManagedStreamScheduleResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/schedules/%s/update", projectID, instanceID, scheduleID)
+	return Request[UpdateManagedStreamScheduleResponse](ctx, c, "PUT", path, body)
+}
+
+// updateManagedStreamSettings calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/settings/update.
+func updateManagedStreamSettings(ctx context.Context, c *Client, projectID string, instanceID string, body UpdateManagedStreamSettingsBody) (*Response[UpdateManagedStreamSettingsResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/settings/update", projectID, instanceID)
+	return Request[UpdateManagedStreamSettingsResponse](ctx, c, "PUT", path, body)
+}
+
+// updateManagedStreamWebhook calls PUT /api/v1/projects/:projectId/managed/instances/:instanceId/stream/webhooks/:webhookId/update.
+func updateManagedStreamWebhook(ctx context.Context, c *Client, projectID string, instanceID string, webhookID string, body UpdateManagedStreamWebhookBody) (*Response[UpdateManagedStreamWebhookResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/webhooks/%s/update", projectID, instanceID, webhookID)
+	return Request[UpdateManagedStreamWebhookResponse](ctx, c, "PUT", path, body)
+}
+
+// uploadManagedStreamGraphic calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/graphics/upload.
+func uploadManagedStreamGraphic(ctx context.Context, c *Client, projectID string, instanceID string, body UploadManagedStreamGraphicBody) (*Response[UploadManagedStreamGraphicResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/graphics/upload", projectID, instanceID)
+	return Request[UploadManagedStreamGraphicResponse](ctx, c, "POST", path, body)
+}
+
+// verifyManagedStreamDomain calls POST /api/v1/projects/:projectId/managed/instances/:instanceId/stream/domains/:domainId/verify.
+func verifyManagedStreamDomain(ctx context.Context, c *Client, projectID string, instanceID string, domainID string) (*Response[VerifyManagedStreamDomainResponse], error) {
+	path := managedPath("/api/v1/projects/%s/managed/instances/%s/stream/domains/%s/verify", projectID, instanceID, domainID)
+	return Request[VerifyManagedStreamDomainResponse](ctx, c, "POST", path, struct{}{})
 }
