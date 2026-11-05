@@ -40,9 +40,10 @@ import type {
   UpdateManagedInstancePublicAccessBody,
   UpdateManagedInstanceUserBody,
 } from './managed-types.js';
+import { ManagedStreamsSubModule } from './managed-streams.js';
 import { ManagedRealtimeSubModule } from './managed-realtime.js';
 
-// Managed Services (Databases + Realtime) of the Dashboard API.
+// Managed Services (Databases, Realtime, Streams) of the Dashboard API.
 //
 // Every request and response type comes from managed-types.ts, which
 // scripts/generate-managed.ts generates from the Dashboard's openapi.json.
@@ -458,7 +459,7 @@ export class ManagedDatabasesSubModule {
 }
 
 /**
- * Managed Services (Databases + Realtime): `client.managed`.
+ * Managed Services (Databases, Realtime, Streams): `client.managed`.
  * See {@link ManagedInstancesSubModule}, {@link ManagedDatabasesSubModule}
  * and {@link ManagedRealtimeSubModule}.
  */
@@ -466,11 +467,13 @@ export class ManagedModule {
   public readonly instances: ManagedInstancesSubModule;
   public readonly databases: ManagedDatabasesSubModule;
   public readonly realtime: ManagedRealtimeSubModule;
+  public readonly streams: ManagedStreamsSubModule;
 
   constructor(private readonly client: HubflyClient) {
     this.instances = new ManagedInstancesSubModule(client);
     this.databases = new ManagedDatabasesSubModule(client);
     this.realtime = new ManagedRealtimeSubModule(client);
+    this.streams = new ManagedStreamsSubModule(client);
   }
 
   /** Engines, versions, sizes and the realtime catalog (any signed-in user). */
